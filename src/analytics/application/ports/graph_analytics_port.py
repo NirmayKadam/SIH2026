@@ -1,0 +1,17 @@
+from abc import ABC, abstractmethod
+from shared_kernel.domain.value_objects import EntityId
+from analytics.domain.entities import CentralityScore, Community, PathResult, CentralityType
+
+
+class GraphAnalyticsPort(ABC):
+    """Runs algorithms over the current graph state. Implemented against a real,
+    currently-loaded graph — never against a fixture pretending to be the live graph."""
+
+    @abstractmethod
+    def compute_centrality(self, centrality_type: CentralityType) -> list[CentralityScore]: ...
+
+    @abstractmethod
+    def detect_communities(self) -> list[Community]: ...
+
+    @abstractmethod
+    def shortest_path(self, source: EntityId, target: EntityId) -> PathResult: ...

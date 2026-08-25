@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-changeme}
+    ports:
+      - "7474:7474"   # Neo4j Browser
+      - "7687:7687"   # Bolt
+    volumes:
+      - neo4j_data:/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    env_file: .env
+    depends_on:
+      - neo4j
+      - redis
+    ports:
+      - "8000:8000"
+    command: uvicorn api_gateway.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+
+  worker:
+    build: .
+    env_file: .env
+    depends_on:
+      - neo4j
+      - redis
+    command: rq worker extraction_jobs --url ${REDIS_URL:-redis://redis:6379/0}
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+
+volumes:
+  neo4j_data:
