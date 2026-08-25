@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from ingestion.domain.entities import RawDocument
-from extraction.domain.entities import ExtractedEntity, ExtractedRelationship
+from extraction.domain.entities import DocumentInput, ExtractedEntity, ExtractedRelationship
 
 
 class EntityExtractionPort(ABC):
@@ -8,5 +7,5 @@ class EntityExtractionPort(ABC):
     RateLimitExceededError) on failure — never return an empty list to mask a failed call."""
 
     @abstractmethod
-    def extract(self, document: RawDocument) -> tuple[list[ExtractedEntity], list[ExtractedRelationship]]:
+    def extract(self, document: DocumentInput) -> tuple[list[ExtractedEntity], list[ExtractedRelationship]]:
         ...

@@ -71,5 +71,34 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
             "MATCH (center:Entity {id: $id})-[r*1..$depth]-(n) RETURN center, r, n"
         )
 
+    def get_node(self, entity_id: EntityId) -> GraphNode:
+        raise NotImplementedError(
+            "Implement single-node lookup: MATCH (n:Entity {id: $id}) RETURN n"
+        )
+
+    def search_nodes(self, name_query: str, limit: int = 20) -> list[GraphNode]:
+        raise NotImplementedError(
+            "Implement case-insensitive name search: "
+            "MATCH (n:Entity) WHERE toLower(n.name) CONTAINS toLower($q) RETURN n LIMIT $limit"
+        )
+
+    def get_all_nodes(self) -> list[GraphNode]:
+        raise NotImplementedError(
+            "Implement full graph dump: MATCH (n:Entity) RETURN n — "
+            "needed by Analytics (NetworkX) to build in-memory graph"
+        )
+
+    def get_all_edges(self) -> list[GraphEdge]:
+        raise NotImplementedError(
+            "Implement full edge dump: MATCH ()-[r:RELATES]->() RETURN r — "
+            "needed by Analytics (NetworkX) alongside get_all_nodes"
+        )
+
+    def get_stats(self) -> dict:
+        raise NotImplementedError(
+            "Implement stats query: MATCH (n:Entity) RETURN count(n), "
+            "MATCH ()-[r]->() RETURN count(r)"
+        )
+
     def close(self) -> None:
         self._driver.close()

@@ -62,8 +62,27 @@ Every bounded context under `src/` follows the same 4-layer structure:
 | Query | `src/query/` | NL intent classification → parameterized Cypher templates |
 | API Gateway | `src/api_gateway/` | Composition root (NOT a business domain). Mounts routers, wires DI |
 | Workers | `src/workers/` | RQ workers consuming async extraction jobs |
-| Shared Kernel | `src/shared_kernel/` | `EntityId`, `Confidence`, `SourceProvenance`, base error types |
+| Shared Kernel | `src/shared_kernel/` | `EntityId`, `Confidence`, `SourceProvenance`, `EntityKind`, `RelationshipKind`, base error types |
 | Frontend | `frontend/` | React SPA with vis-network graph visualization |
+
+### Shared Types (in `shared_kernel/domain/value_objects.py`)
+
+These types are the shared vocabulary — every context imports them from here,
+never defines its own copy:
+
+- `EntityKind` — `person`, `organization`, `account`, `location`, `event`
+- `RelationshipKind` — `communicated_with`, `transacted_with`, `officer_of`, `intermediary_of`, `present_at`, `mentioned_with`
+- `EntityId` — wraps a string ID, validated non-empty
+- `Confidence` — float 0.0–1.0, must come from real computation
+- `SourceType` — `icij_offshore_leaks`, `enron_emails`, `court_judgment`
+- `SourceProvenance` — tracks source type + document ID + timestamp
+
+### Cross-Domain Import Rules
+
+Each domain imports ONLY from `shared_kernel` and its own domain. One documented
+exception: `graph/application/use_cases/persist_extraction_result.py` imports
+Extraction domain types (`ExtractedEntity`, `ExtractedRelationship`) for the
+pipeline handoff. No other cross-domain domain imports are allowed.
 
 ### Composition Root
 
@@ -74,6 +93,23 @@ should import a concrete adapter directly.
 `api_gateway/main.py` mounts each context's router and uses
 `app.dependency_overrides` to inject container-built use cases into FastAPI's
 `Depends(...)`.
+
+## REST API Surface
+
+| Context | Method | Route | Purpose |
+|---|---|---|---|
+| Ingestion | POST | `/api/ingestion/documents` | Submit source for async ingestion |
+| Ingestion | GET | `/api/ingestion/documents/{job_id}` | Check job status |
+| Extraction | POST | `/api/extraction/documents/{document_id}/extract` | Re-run extraction |
+| Graph | GET | `/api/graph/entities` | List/search entities (`?q=name&limit=20`) |
+| Graph | GET | `/api/graph/entities/{entity_id}` | Single entity detail |
+| Graph | GET | `/api/graph/entities/{entity_id}/neighbors` | N-hop neighborhood (`?depth=2`) |
+| Graph | GET | `/api/graph/stats` | Node/edge counts |
+| Analytics | GET | `/api/analytics/centrality` | Centrality scores (`?type=degree\|betweenness\|pagerank`) |
+| Analytics | GET | `/api/analytics/communities` | Community detection |
+| Analytics | GET | `/api/analytics/shortest-path` | Shortest path (`?source=X&target=Y`) |
+| Query | POST | `/api/query/ask` | Natural language query |
+| — | GET | `/health` | Health check |
 
 ## Naming Conventions
 
@@ -173,10 +209,22 @@ make down                      # tear down containers
 | `src/api_gateway/di_container.py` | Composition root, all adapter wiring |
 | `src/api_gateway/settings.py` | Fail-fast env config |
 | `src/shared_kernel/domain/errors.py` | Base exception hierarchy |
-| `src/shared_kernel/domain/value_objects.py` | `EntityId`, `Confidence`, `SourceProvenance` |
+| `src/shared_kernel/domain/value_objects.py` | `EntityId`, `Confidence`, `SourceProvenance`, `EntityKind`, `RelationshipKind` |
 | `docker-compose.yml` | Service orchestration |
 | `docs/data-provenance.md` | Dataset sources, licensing, subsample scope |
 | `docs/domain-model.md` | Entity/relationship type glossary |
+
+## Per-Domain GEMINI.md Files
+
+Each bounded context has its own `GEMINI.md` scoped to that developer's needs:
+- `src/shared_kernel/GEMINI.md`
+- `src/ingestion/GEMINI.md`
+- `src/extraction/GEMINI.md`
+- `src/graph/GEMINI.md`
+- `src/analytics/GEMINI.md`
+- `src/query/GEMINI.md`
+- `src/workers/GEMINI.md`
+- `frontend/GEMINI.md`
 
 ## Testing
 

@@ -48,7 +48,11 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
             )
 
         raise NotImplementedError(
-            f"Intent {query.intent} not yet wired to a real executor branch — "
-            "implement against NEIGHBORS_WITHIN_HOPS -> Graph context, "
-            "COMMUNITY_MEMBERS -> Analytics context, don't fake the response."
+            f"Intent {query.intent} not yet wired to a real executor branch. "
+            "Implement: "
+            "NEIGHBORS_WITHIN_HOPS → Graph context (get_neighborhood), "
+            "COMMUNITY_MEMBERS → Analytics context (detect_communities), "
+            "ENTITY_SEARCH → Graph context (search_nodes), "
+            "GRAPH_SUMMARY → Graph context (get_stats). "
+            "Don't fake the response."
         )

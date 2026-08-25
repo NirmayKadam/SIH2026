@@ -16,3 +16,35 @@ class GraphRepositoryPort(ABC):
 
     @abstractmethod
     def get_neighborhood(self, entity_id: EntityId, depth: int = 1) -> Neighborhood: ...
+
+    @abstractmethod
+    def get_node(self, entity_id: EntityId) -> GraphNode:
+        """Retrieve a single node by EntityId. Raises NotFoundError if not in graph."""
+        ...
+
+    @abstractmethod
+    def search_nodes(self, name_query: str, limit: int = 20) -> list[GraphNode]:
+        """Case-insensitive name search. Returns up to `limit` matching nodes."""
+        ...
+
+    @abstractmethod
+    def get_all_nodes(self) -> list[GraphNode]:
+        """Return every node in the graph. Used by Analytics (NetworkX) to build
+        in-memory graph for algorithm execution."""
+        ...
+
+    @abstractmethod
+    def get_all_edges(self) -> list[GraphEdge]:
+        """Return every edge in the graph. Used alongside get_all_nodes by Analytics."""
+        ...
+
+    @abstractmethod
+    def get_stats(self) -> dict:
+        """Return {'total_nodes': int, 'total_edges': int}. Used by dashboard + GRAPH_SUMMARY intent."""
+        ...
+
+    @abstractmethod
+    def close(self) -> None:
+        """Release database connections. Must be called in a finally block by long-running
+        processes (e.g. worker)."""
+        ...

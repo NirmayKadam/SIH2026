@@ -1,24 +1,17 @@
 """Extraction domain — pure Python."""
 from dataclasses import dataclass
-from enum import Enum
-from shared_kernel.domain.value_objects import EntityId, Confidence, SourceProvenance
+from shared_kernel.domain.value_objects import (
+    EntityId, Confidence, SourceProvenance, SourceType, EntityKind, RelationshipKind,
+)
 
 
-class EntityKind(str, Enum):
-    PERSON = "person"
-    ORGANIZATION = "organization"
-    ACCOUNT = "account"
-    LOCATION = "location"
-    EVENT = "event"
-
-
-class RelationshipKind(str, Enum):
-    COMMUNICATED_WITH = "communicated_with"
-    TRANSACTED_WITH = "transacted_with"
-    OFFICER_OF = "officer_of"
-    INTERMEDIARY_OF = "intermediary_of"
-    PRESENT_AT = "present_at"
-    MENTIONED_WITH = "mentioned_with"
+@dataclass
+class DocumentInput:
+    """What Extraction needs to do its job. Mapped from Ingestion's RawDocument
+    at the worker boundary — Extraction never imports ingestion.domain."""
+    document_id: str
+    source_type: SourceType
+    raw_text: str
 
 
 @dataclass

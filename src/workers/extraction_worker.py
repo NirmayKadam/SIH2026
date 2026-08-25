@@ -18,6 +18,7 @@ from extraction.infrastructure.adapters.gemini_entity_extractor import GeminiEnt
 from extraction.infrastructure.adapters.rapidfuzz_identity_resolver import (
     RapidFuzzIdentityResolutionAdapter,
 )
+from extraction.domain.entities import DocumentInput
 from graph.application.use_cases.persist_extraction_result import PersistExtractionResultUseCase
 from graph.infrastructure.adapters.neo4j_graph_repository import Neo4jGraphRepositoryAdapter
 from shared_kernel.domain.value_objects import SourceType
@@ -43,7 +44,12 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
     persist_use_case = PersistExtractionResultUseCase(graph_repo)
 
     for document in documents:
-        entities, relationships, _candidates = extract_use_case.execute(document)
+        doc_input = DocumentInput(
+            document_id=document.document_id,
+            source_type=document.source_type,
+            raw_text=document.raw_text,
+        )
+        entities, relationships, _candidates = extract_use_case.execute(doc_input)
         persist_use_case.execute(entities, relationships)
         # TODO: resolution candidates need a real merge decision path — don't auto-merge
         # blindly; surface to a human reviewer or apply a confirmed threshold policy.

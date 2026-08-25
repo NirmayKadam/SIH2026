@@ -7,6 +7,25 @@ from enum import Enum
 from datetime import datetime
 
 
+class EntityKind(str, Enum):
+    """Type of real-world entity extracted from source data."""
+    PERSON = "person"
+    ORGANIZATION = "organization"
+    ACCOUNT = "account"
+    LOCATION = "location"
+    EVENT = "event"
+
+
+class RelationshipKind(str, Enum):
+    """Type of relationship between entities, derived from real data patterns."""
+    COMMUNICATED_WITH = "communicated_with"
+    TRANSACTED_WITH = "transacted_with"
+    OFFICER_OF = "officer_of"
+    INTERMEDIARY_OF = "intermediary_of"
+    PRESENT_AT = "present_at"
+    MENTIONED_WITH = "mentioned_with"
+
+
 @dataclass(frozen=True)
 class EntityId:
     """Identifies a real-world entity (person, org, account, location, event) across contexts."""

@@ -12,6 +12,9 @@ from ingestion.application.use_cases.ingest_document import IngestDocumentUseCas
 
 from graph.infrastructure.adapters.neo4j_graph_repository import Neo4jGraphRepositoryAdapter
 from graph.application.use_cases.get_entity_neighborhood import GetEntityNeighborhoodUseCase
+from graph.application.use_cases.get_entity_detail import GetEntityDetailUseCase
+from graph.application.use_cases.search_entities import SearchEntitiesUseCase
+from graph.application.use_cases.get_graph_stats import GetGraphStatsUseCase
 
 from analytics.infrastructure.adapters.networkx_analytics_adapter import NetworkxAnalyticsAdapter
 from analytics.application.use_cases.compute_centrality import ComputeCentralityUseCase
@@ -38,6 +41,9 @@ class Container:
     ingest_document_use_case: IngestDocumentUseCase
     job_queue: RedisRqJobQueueAdapter
     get_neighborhood_use_case: GetEntityNeighborhoodUseCase
+    get_entity_detail_use_case: GetEntityDetailUseCase
+    search_entities_use_case: SearchEntitiesUseCase
+    get_graph_stats_use_case: GetGraphStatsUseCase
     compute_centrality_use_case: ComputeCentralityUseCase
     detect_communities_use_case: DetectCommunitiesUseCase
     find_shortest_path_use_case: FindShortestPathUseCase
@@ -63,6 +69,9 @@ def build_container() -> Container:
         ingest_document_use_case=IngestDocumentUseCase(job_queue),
         job_queue=job_queue,
         get_neighborhood_use_case=GetEntityNeighborhoodUseCase(graph_repo),
+        get_entity_detail_use_case=GetEntityDetailUseCase(graph_repo),
+        search_entities_use_case=SearchEntitiesUseCase(graph_repo),
+        get_graph_stats_use_case=GetGraphStatsUseCase(graph_repo),
         compute_centrality_use_case=compute_centrality_use_case,
         detect_communities_use_case=DetectCommunitiesUseCase(analytics),
         find_shortest_path_use_case=find_shortest_path_use_case,

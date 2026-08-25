@@ -1,7 +1,6 @@
 """Graph domain — pure Python."""
 from dataclasses import dataclass
-from shared_kernel.domain.value_objects import EntityId
-from extraction.domain.entities import EntityKind, RelationshipKind
+from shared_kernel.domain.value_objects import EntityId, EntityKind, RelationshipKind
 
 
 @dataclass

@@ -18,12 +18,13 @@ from datetime import datetime
 
 import google.generativeai as genai
 
-from ingestion.domain.entities import RawDocument
 from extraction.application.ports.extraction_port import EntityExtractionPort
 from extraction.domain.entities import (
-    ExtractedEntity, ExtractedRelationship, EntityKind, RelationshipKind,
+    DocumentInput, ExtractedEntity, ExtractedRelationship,
 )
-from shared_kernel.domain.value_objects import EntityId, Confidence, SourceProvenance
+from shared_kernel.domain.value_objects import (
+    EntityId, Confidence, SourceProvenance, EntityKind, RelationshipKind,
+)
 from shared_kernel.domain.errors import ExternalServiceError, RateLimitExceededError
 
 MODEL_NAME = "gemini-2.5-flash-lite"
@@ -59,7 +60,7 @@ class GeminiEntityExtractionAdapter(EntityExtractionPort):
         self._model = genai.GenerativeModel(MODEL_NAME)
 
     def extract(
-        self, document: RawDocument
+        self, document: DocumentInput
     ) -> tuple[list[ExtractedEntity], list[ExtractedRelationship]]:
         prompt = EXTRACTION_PROMPT.format(document_text=document.raw_text)
 

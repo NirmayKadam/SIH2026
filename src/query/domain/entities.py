@@ -9,6 +9,8 @@ class QueryIntent(str, Enum):
     TOP_CENTRAL_NODES = "top_central_nodes"
     NEIGHBORS_WITHIN_HOPS = "neighbors_within_hops"
     COMMUNITY_MEMBERS = "community_members"
+    ENTITY_SEARCH = "entity_search"
+    GRAPH_SUMMARY = "graph_summary"
 
 
 @dataclass
