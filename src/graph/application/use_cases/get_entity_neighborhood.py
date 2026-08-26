@@ -5,7 +5,7 @@ from graph.domain.entities import Neighborhood
 
 class GetEntityNeighborhoodUseCase:
     def __init__(self, repository: GraphRepositoryPort) -> None:
-        self._repository = repository
+        self.repository = repository
 
     def execute(self, entity_id: EntityId, depth: int = 1) -> Neighborhood:
-        return self._repository.get_neighborhood(entity_id, depth=depth)
+        return self.repository.get_neighborhood(entity_id, depth=depth)

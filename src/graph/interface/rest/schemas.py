@@ -1,11 +1,18 @@
 from pydantic import BaseModel
 
 
+class SourceProvenanceDTO(BaseModel):
+    source_type: str
+    source_document_id: str
+    ingested_at: str
+
+
 class GraphNodeResponseDTO(BaseModel):
     entity_id: str
     kind: str
     name: str
     confidence: float
+    provenances: list[SourceProvenanceDTO]
 
 
 class GraphEdgeResponseDTO(BaseModel):
@@ -13,6 +20,7 @@ class GraphEdgeResponseDTO(BaseModel):
     target_entity_id: str
     kind: str
     confidence: float
+    provenances: list[SourceProvenanceDTO]
 
 
 class NeighborhoodResponseDTO(BaseModel):

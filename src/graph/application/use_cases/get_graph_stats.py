@@ -5,7 +5,7 @@ class GetGraphStatsUseCase:
     """Return node/edge counts for dashboard and GRAPH_SUMMARY query intent."""
 
     def __init__(self, repository: GraphRepositoryPort) -> None:
-        self._repository = repository
+        self.repository = repository
 
     def execute(self) -> dict:
-        return self._repository.get_stats()
+        return self.repository.get_stats()
