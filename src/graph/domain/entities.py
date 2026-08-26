@@ -1,6 +1,8 @@
 """Graph domain — pure Python."""
-from dataclasses import dataclass
-from shared_kernel.domain.value_objects import EntityId, EntityKind, RelationshipKind
+from dataclasses import dataclass, field
+from shared_kernel.domain.value_objects import (
+    EntityId, EntityKind, RelationshipKind, SourceProvenance,
+)
 
 
 @dataclass
@@ -9,6 +11,7 @@ class GraphNode:
     kind: EntityKind
     name: str
     confidence: float
+    provenances: list[SourceProvenance] = field(default_factory=list)
 
 
 @dataclass
@@ -17,6 +20,7 @@ class GraphEdge:
     target_entity_id: EntityId
     kind: RelationshipKind
     confidence: float
+    provenances: list[SourceProvenance] = field(default_factory=list)
 
 
 @dataclass

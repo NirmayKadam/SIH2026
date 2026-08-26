@@ -14,7 +14,7 @@ from graph.application.use_cases.search_entities import SearchEntitiesUseCase
 from graph.application.use_cases.get_graph_stats import GetGraphStatsUseCase
 from graph.interface.rest.schemas import (
     NeighborhoodResponseDTO, GraphNodeResponseDTO, GraphEdgeResponseDTO,
-    EntityListResponseDTO, GraphStatsResponseDTO,
+    EntityListResponseDTO, GraphStatsResponseDTO, SourceProvenanceDTO,
 )
 from shared_kernel.domain.value_objects import EntityId
 from shared_kernel.domain.errors import NotFoundError
@@ -42,9 +42,37 @@ def get_stats_use_case() -> GetGraphStatsUseCase:
 
 # --- Helpers ---
 
-def _node_to_dto(n) -> GraphNodeResponseDTO:
+def node_to_dto(n) -> GraphNodeResponseDTO:
     return GraphNodeResponseDTO(
-        entity_id=n.entity_id.value, kind=n.kind.value, name=n.name, confidence=n.confidence
+        entity_id=n.entity_id.value,
+        kind=n.kind.value,
+        name=n.name,
+        confidence=n.confidence,
+        provenances=[
+            SourceProvenanceDTO(
+                source_type=p.source_type.value,
+                source_document_id=p.source_document_id,
+                ingested_at=p.ingested_at.isoformat(),
+            )
+            for p in n.provenances
+        ],
+    )
+
+
+def edge_to_dto(e) -> GraphEdgeResponseDTO:
+    return GraphEdgeResponseDTO(
+        source_entity_id=e.source_entity_id.value,
+        target_entity_id=e.target_entity_id.value,
+        kind=e.kind.value,
+        confidence=e.confidence,
+        provenances=[
+            SourceProvenanceDTO(
+                source_type=p.source_type.value,
+                source_document_id=p.source_document_id,
+                ingested_at=p.ingested_at.isoformat(),
+            )
+            for p in e.provenances
+        ],
     )
 
 
@@ -58,7 +86,7 @@ def list_entities(
 ) -> EntityListResponseDTO:
     nodes = use_case.execute(q, limit=limit)
     return EntityListResponseDTO(
-        entities=[_node_to_dto(n) for n in nodes],
+        entities=[node_to_dto(n) for n in nodes],
         total=len(nodes),
     )
 
@@ -72,7 +100,7 @@ def get_entity_detail(
         node = use_case.execute(EntityId(entity_id))
     except NotFoundError:
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
-    return _node_to_dto(node)
+    return node_to_dto(node)
 
 
 @router.get("/entities/{entity_id}/neighbors", response_model=NeighborhoodResponseDTO)
@@ -87,17 +115,9 @@ def get_neighbors(
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
 
     return NeighborhoodResponseDTO(
-        center=_node_to_dto(neighborhood.center),
-        nodes=[_node_to_dto(n) for n in neighborhood.nodes],
-        edges=[
-            GraphEdgeResponseDTO(
-                source_entity_id=e.source_entity_id.value,
-                target_entity_id=e.target_entity_id.value,
-                kind=e.kind.value,
-                confidence=e.confidence,
-            )
-            for e in neighborhood.edges
-        ],
+        center=node_to_dto(neighborhood.center),
+        nodes=[node_to_dto(n) for n in neighborhood.nodes],
+        edges=[edge_to_dto(e) for e in neighborhood.edges],
     )
 
 

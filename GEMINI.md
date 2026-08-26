@@ -126,6 +126,10 @@ should import a concrete adapter directly.
 | Tests | `test_` prefix, mirror source path | `tests/test_neo4j_graph_repository.py` |
 | API routes | `/api/<context>/<resource>` | `/api/graph/entities/{id}` |
 
+> **No leading underscores.** Never prefix any name (function, method, variable,
+> class, module) with `_` or `__`. Use descriptive public names instead. Example:
+> `record_to_node`, not `_record_to_node`. This applies to all code in the project.
+
 ## Hard Rules — NEVER Violate These
 
 These are codified in `ARCHITECTURE.md` §5. All code changes must comply:
