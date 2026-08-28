@@ -86,6 +86,10 @@ class IcijDeterministicExtractorAdapter(EntityExtractionPort):
             ingested_at=datetime.now(timezone.utc),
         )
 
+        # Extract all unused keys as properties (metadata)
+        ignore_keys = {"node_id", "name", "node_id_start", "node_id_end", "rel_type"}
+        properties = {k: str(v).strip() for k, v in row.items() if k not in ignore_keys and str(v).strip()}
+
         # Relationship rows have node_id_start + node_id_end
         if "node_id_start" in row and "node_id_end" in row:
             source_id_raw = str(row.get("node_id_start", "")).strip()
@@ -101,6 +105,7 @@ class IcijDeterministicExtractorAdapter(EntityExtractionPort):
                         kind=kind,
                         confidence=Confidence(1.0),
                         provenance=provenance,
+                        properties=properties,
                     )
                 )
             return entities, relationships
@@ -128,6 +133,7 @@ class IcijDeterministicExtractorAdapter(EntityExtractionPort):
                 name=name,
                 confidence=Confidence(1.0),
                 provenance=provenance,
+                properties=properties,
             )
         )
 

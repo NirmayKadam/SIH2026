@@ -12,6 +12,7 @@ class GraphNode:
     name: str
     confidence: float
     provenances: list[SourceProvenance] = field(default_factory=list)
+    properties: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -21,6 +22,7 @@ class GraphEdge:
     kind: RelationshipKind
     confidence: float
     provenances: list[SourceProvenance] = field(default_factory=list)
+    properties: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

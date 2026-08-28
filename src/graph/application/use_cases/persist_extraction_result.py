@@ -19,6 +19,7 @@ class PersistExtractionResultUseCase:
                     entity_id=e.entity_id, kind=e.kind, name=e.name,
                     confidence=e.confidence.score,
                     provenances=[e.provenance],
+                    properties=e.properties,
                 )
             )
         for r in relationships:
@@ -29,5 +30,6 @@ class PersistExtractionResultUseCase:
                     kind=r.kind,
                     confidence=r.confidence.score,
                     provenances=[r.provenance],
+                    properties=r.properties,
                 )
             )
