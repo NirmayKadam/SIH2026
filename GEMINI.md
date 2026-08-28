@@ -163,6 +163,13 @@ All domain exceptions inherit from `shared_kernel.domain.errors.DomainError`:
 Adapters MUST raise `ExternalServiceError` (or subclass) on failure. Never return
 an empty/default value that masks the failure.
 
+## API Security
+
+To prevent API abuse and Cross-Site Scripting (XSS), the following measures are enforced:
+
+1. **Global Rate Limiting**: A `slowapi` limiter is attached to the FastAPI app (`api_gateway/main.py`) which enforces a strict `"60/minute"` request limit per client IP across all API endpoints. Exceeding this triggers a `429 Too Many Requests` error.
+2. **XSS Sanitization**: Pydantic schemas processing untrusted text input (e.g., `IngestDocumentRequestDTO.source_path`, `AskQuestionRequestDTO.question`) use `SanitizedString` from `shared_kernel.interface.validators`. This automatically strips all HTML tags using the `nh3` (ammonia) library before the request ever hits a use case.
+
 ## Environment Variables
 
 All required; app refuses to start if any are missing (see `.env.example`):

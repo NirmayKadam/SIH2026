@@ -9,6 +9,11 @@ from fastapi import FastAPI
 from api_gateway.settings import load_settings
 from api_gateway.di_container import build_container
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 from ingestion.interface.rest.router import router as ingestion_router, get_use_case as ingestion_get_use_case, get_job_queue as ingestion_get_job_queue
 from graph.interface.rest.router import (
     router as graph_router,
@@ -32,6 +37,11 @@ app = FastAPI(
     title="AI-Powered Criminal Network Analysis System",
     description="SIH 2026 PS 26189 — Ministry of Home Affairs / NCRB",
 )
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(ingestion_router)
 app.include_router(extraction_router)
