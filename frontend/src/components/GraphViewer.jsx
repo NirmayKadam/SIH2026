@@ -33,8 +33,8 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
           color: '#f8fafc', 
           size: 13, 
           face: 'Plus Jakarta Sans, sans-serif',
-          strokeWidth: 2,
-          strokeColor: '#000000'
+          background: 'rgba(0,0,0,0.6)',
+          strokeWidth: 0
         },
         borderWidth: isSelected ? 4 : 2,
         color: {
@@ -61,8 +61,8 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
         color: '#94a3b8', 
         size: 11, 
         align: 'middle', 
-        strokeWidth: 2,
-        strokeColor: '#090d16'
+        strokeWidth: 0,
+        background: 'rgba(0,0,0,0.6)'
       },
       color: { 
         color: 'rgba(148, 163, 184, 0.3)', 
@@ -84,10 +84,10 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
       physics: {
         solver: 'forceAtlas2Based',
         forceAtlas2Based: {
-          gravitationalConstant: -70,
+          gravitationalConstant: -100,
           centralGravity: 0.015,
-          springLength: 120,
-          springConstant: 0.08,
+          springLength: 160,
+          springConstant: 0.05,
           damping: 0.8
         },
         stabilization: { iterations: 120 }

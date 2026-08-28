@@ -11,7 +11,17 @@ export default function App() {
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
   const [graphStats, setGraphStats] = useState({ total_nodes: 0, total_edges: 0 });
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'ingestion'
+  const [theme, setTheme] = useState('dark');
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
 
+  // Apply theme to body
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('theme-light');
+    } else {
+      document.body.classList.remove('theme-light');
+    }
+  }, [theme]);
   // Load initial graph cluster from top degree nodes
   const loadInitialGraph = useCallback(async () => {
     try {
@@ -80,41 +90,76 @@ export default function App() {
         />
       </div>
 
-      {/* Top Header Bar */}
-      <div className="glass-panel app-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '18px' }}>🛡️</span>
-          <span style={{ fontWeight: '700', fontSize: '14px', letterSpacing: '0.5px' }}>
-            CRIMINAL NETWORK ANALYSIS
-          </span>
-        </div>
-        <div style={{ height: '18px', width: '1px', background: 'var(--panel-border)' }} />
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <span className="badge-tag">{graphStats.total_nodes} NODES</span>
-          <span className="badge-tag">{graphStats.total_edges} EDGES</span>
-        </div>
-      </div>
-
-      {/* Top Center Query Bar */}
-      <div style={{ 
-        position: 'absolute', 
-        top: '16px', 
-        left: '50%', 
-        transform: 'translateX(-50%)', 
-        zIndex: 20, 
-        width: 'min(640px, 90vw)' 
+      {/* Unified Top Navigation Bar */}
+      <div className="glass-panel" style={{
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        right: '0',
+        zIndex: 30,
+        borderRadius: '0',
+        borderTop: 'none',
+        borderLeft: 'none',
+        borderRight: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 24px',
+        boxShadow: 'var(--glass-shadow)',
+        background: 'var(--bg-card)'
       }}>
-        <QueryBox 
-          onQuerySuccess={handleQuerySuccess} 
-          onSelectEntity={handleSelectEntity}
-        />
+        {/* Left: Branding & Stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>🛡️</span>
+            <span style={{ fontWeight: '700', fontSize: '15px', letterSpacing: '0.5px', color: 'var(--text-main)' }}>
+              CRIMINAL NETWORK ANALYSIS
+            </span>
+          </div>
+          <div style={{ height: '20px', width: '1px', background: 'var(--panel-border)' }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span className="badge-tag">{graphStats.total_nodes} NODES</span>
+            <span className="badge-tag">{graphStats.total_edges} EDGES</span>
+          </div>
+        </div>
+
+        {/* Center: Search */}
+        <div style={{ width: 'min(500px, 40vw)' }}>
+          <QueryBox 
+            onQuerySuccess={handleQuerySuccess} 
+            onSelectEntity={handleSelectEntity}
+            transparent={true}
+          />
+        </div>
+
+        {/* Right: Theme Toggle */}
+        <div>
+          <button 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            style={{ 
+              background: 'rgba(0,0,0,0.05)', 
+              border: '1px solid var(--panel-border)', 
+              borderRadius: '50%', 
+              width: '40px', 
+              height: '40px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontSize: '18px',
+              cursor: 'pointer'
+            }}
+            title="Toggle Day/Night Mode"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
       </div>
 
       {/* Right Drawer: Entity Detail (if selected) */}
       {selectedEntityId && (
         <div style={{ 
           position: 'absolute', 
-          top: '16px', 
+          top: '86px', 
           right: '16px', 
           zIndex: 20, 
           width: '340px' 
@@ -133,41 +178,73 @@ export default function App() {
         bottom: '16px', 
         left: '16px', 
         zIndex: 20, 
-        width: '360px' 
+        width: '360px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
       }}>
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-          <button 
-            onClick={() => setActiveTab('analytics')}
-            style={{ 
-              flex: 1, 
-              padding: '6px 12px', 
-              fontSize: '12px',
-              background: activeTab === 'analytics' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(0,0,0,0.4)',
-              borderColor: activeTab === 'analytics' ? 'var(--neon-emerald)' : 'var(--panel-border)',
-              color: activeTab === 'analytics' ? 'var(--neon-emerald)' : 'var(--text-muted)'
-            }}
-          >
-            Analytics
-          </button>
-          <button 
-            onClick={() => setActiveTab('ingestion')}
-            style={{ 
-              flex: 1, 
-              padding: '6px 12px', 
-              fontSize: '12px',
-              background: activeTab === 'ingestion' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(0,0,0,0.4)',
-              borderColor: activeTab === 'ingestion' ? 'var(--neon-amber)' : 'var(--panel-border)',
-              color: activeTab === 'ingestion' ? 'var(--neon-amber)' : 'var(--text-muted)'
-            }}
-          >
-            Ingest Source
-          </button>
-        </div>
+        {isPanelOpen ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '6px', flexGrow: 1 }}>
+                <button 
+                  onClick={() => setActiveTab('analytics')}
+                  style={{ 
+                    flex: 1, 
+                    padding: '6px 12px', 
+                    fontSize: '12px',
+                    background: activeTab === 'analytics' ? 'rgba(16, 185, 129, 0.2)' : 'var(--btn-bg)',
+                    borderColor: activeTab === 'analytics' ? 'var(--neon-emerald)' : 'var(--panel-border)',
+                    color: activeTab === 'analytics' ? 'var(--neon-emerald)' : 'var(--text-muted)'
+                  }}
+                >
+                  Analytics
+                </button>
+                <button 
+                  onClick={() => setActiveTab('ingestion')}
+                  style={{ 
+                    flex: 1, 
+                    padding: '6px 12px', 
+                    fontSize: '12px',
+                    background: activeTab === 'ingestion' ? 'rgba(245, 158, 11, 0.2)' : 'var(--btn-bg)',
+                    borderColor: activeTab === 'ingestion' ? 'var(--neon-amber)' : 'var(--panel-border)',
+                    color: activeTab === 'ingestion' ? 'var(--neon-amber)' : 'var(--text-muted)'
+                  }}
+                >
+                  Ingest Source
+                </button>
+              </div>
+              <button 
+                onClick={() => setIsPanelOpen(false)}
+                style={{ marginLeft: '8px', padding: '6px 10px', fontSize: '12px', background: 'var(--btn-bg)' }}
+                title="Collapse Panel"
+              >
+                ▼
+              </button>
+            </div>
 
-        {activeTab === 'analytics' ? (
-          <AnalyticsPanel onSelectEntity={handleSelectEntity} />
+            {activeTab === 'analytics' ? (
+              <AnalyticsPanel onSelectEntity={handleSelectEntity} />
+            ) : (
+              <IngestionPanel />
+            )}
+          </>
         ) : (
-          <IngestionPanel />
+          <button 
+            className="glass-panel"
+            onClick={() => setIsPanelOpen(true)}
+            style={{ 
+              padding: '10px 16px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              borderRadius: '30px', 
+              width: 'fit-content' 
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>📊</span> 
+            <span>Open Tools</span>
+          </button>
         )}
       </div>
     </div>
