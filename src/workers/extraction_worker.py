@@ -54,6 +54,7 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
             document_id=document.document_id,
             source_type=document.source_type,
             raw_text=document.raw_text,
+            source_path=document.source_path,
         )
         entities, relationships, _candidates = extract_use_case.execute(doc_input)
         persist_use_case.execute(entities, relationships)
