@@ -36,7 +36,13 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
     parser = _PARSERS[source_type]()
     documents = parser.parse(source_path)  # will raise until real parsers are implemented
 
-    extractor = GeminiEntityExtractionAdapter()
+    from extraction.infrastructure.adapters.routing_entity_extractor import RoutingEntityExtractorAdapter
+    from extraction.infrastructure.adapters.icij_deterministic_extractor import IcijDeterministicExtractorAdapter
+
+    extractor = RoutingEntityExtractorAdapter(
+        icij_extractor=IcijDeterministicExtractorAdapter(),
+        gemini_extractor=GeminiEntityExtractionAdapter()
+    )
     resolver = RapidFuzzIdentityResolutionAdapter()
     extract_use_case = ExtractEntitiesFromDocumentUseCase(extractor, resolver)
 
