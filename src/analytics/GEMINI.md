@@ -78,13 +78,13 @@ class GraphAnalyticsPort(ABC):
 
 ### How It Gets Graph Data
 
-The NetworkX adapter needs the full graph to run algorithms. It should:
-1. Accept `GraphRepositoryPort` (or call its `get_all_nodes()` / `get_all_edges()`) to load graph data
-2. Build a `networkx.Graph` in memory
-3. Run algorithms against it
+The NetworkX adapter needs the graph to run algorithms. While one option was to use the `GraphRepositoryPort`, for efficiency it instead:
+1. Connects directly to Neo4j using the python driver (`neo4j`).
+2. Executes an optimized Cypher query (`MATCH (a)-[r]->(b)`) to fetch only necessary structural edges and weights.
+3. Builds an in-memory `networkx.Graph` from those edges.
+4. Runs algorithms against it.
 
-**Current gap:** The adapter needs to be wired to read from `GraphRepositoryPort`.
-This wiring happens in `api_gateway/di_container.py`.
+This avoids pulling full, heavy `GraphNode` objects over the wire just to discard their metadata.
 
 ### Algorithms
 

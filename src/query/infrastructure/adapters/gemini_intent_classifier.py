@@ -13,7 +13,7 @@ from query.application.ports.intent_classifier_port import IntentClassifierPort
 from query.domain.entities import ClassifiedQuery, QueryIntent
 from shared_kernel.domain.errors import ExternalServiceError, RateLimitExceededError
 
-MODEL_NAME = "gemini-2.5-flash-lite"
+MODEL_NAME = "gemini-3.5-flash-lite"
 MAX_RETRIES = 3
 
 CLASSIFICATION_PROMPT = """Classify this investigator's question into exactly one of these

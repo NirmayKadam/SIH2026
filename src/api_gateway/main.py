@@ -38,10 +38,20 @@ app = FastAPI(
     description="SIH 2026 PS 26189 — Ministry of Home Affairs / NCRB",
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(ingestion_router)
 app.include_router(extraction_router)
