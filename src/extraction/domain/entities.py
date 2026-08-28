@@ -1,5 +1,5 @@
 """Extraction domain — pure Python."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from shared_kernel.domain.value_objects import (
     EntityId, Confidence, SourceProvenance, SourceType, EntityKind, RelationshipKind,
 )
@@ -22,6 +22,7 @@ class ExtractedEntity:
     name: str
     confidence: Confidence
     provenance: SourceProvenance
+    properties: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -31,6 +32,7 @@ class ExtractedRelationship:
     kind: RelationshipKind
     confidence: Confidence
     provenance: SourceProvenance
+    properties: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

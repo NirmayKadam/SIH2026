@@ -69,15 +69,30 @@ def merge_provenances(
     return serialize_provenances(existing)
 
 
+def merge_properties(existing_json: str | None, new_properties: dict[str, str]) -> str:
+    """Merge new properties into existing properties dict."""
+    existing = {}
+    if existing_json:
+        try:
+            existing = json.loads(existing_json)
+        except json.JSONDecodeError:
+            pass
+    existing.update(new_properties)
+    return json.dumps(existing)
+
+
 def record_to_node(record) -> GraphNode:
     """Map a Neo4j record (with node properties) to a GraphNode domain object."""
     node = record["n"]
+    props_json = node.get("properties_json")
+    properties = json.loads(props_json) if props_json else {}
     return GraphNode(
         entity_id=EntityId(node["id"]),
         kind=EntityKind(node["kind"]),
         name=node["name"],
         confidence=node["confidence"],
         provenances=deserialize_provenances(node.get("provenances")),
+        properties=properties,
     )
 
 
@@ -99,18 +114,21 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
 
     def upsert_node(self, node: GraphNode) -> None:
         """MERGE node by id, append provenances (deduplicate by source_document_id)."""
-        read_query = "MATCH (n:Entity {id: $id}) RETURN n.provenances AS existing_prov"
+        read_query = "MATCH (n:Entity {id: $id}) RETURN n.provenances AS existing_prov, n.properties_json AS existing_props"
         write_query = """
         MERGE (n:Entity {id: $id})
         SET n.kind = $kind, n.name = $name, n.confidence = $confidence,
-            n.provenances = $provenances_json
+            n.provenances = $provenances_json, n.properties_json = $properties_json
         """
         try:
             with self.driver.session() as session:
                 result = session.run(read_query, id=node.entity_id.value)
                 record = result.single()
-                existing_json = record["existing_prov"] if record else None
-                merged_json = merge_provenances(existing_json, node.provenances)
+                existing_prov = record["existing_prov"] if record else None
+                existing_props = record["existing_props"] if record else None
+                
+                merged_prov = merge_provenances(existing_prov, node.provenances)
+                merged_props = merge_properties(existing_props, node.properties)
 
                 session.run(
                     write_query,
@@ -118,7 +136,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                     kind=node.kind.value,
                     name=node.name,
                     confidence=node.confidence,
-                    provenances_json=merged_json,
+                    provenances_json=merged_prov,
+                    properties_json=merged_props,
                 )
         except Neo4jError as exc:
             raise ExternalServiceError(
@@ -129,12 +148,12 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
         """MERGE edge by source+target+kind, append provenances."""
         read_query = """
         MATCH (a:Entity {id: $source_id})-[r:RELATES {kind: $kind}]->(b:Entity {id: $target_id})
-        RETURN r.provenances AS existing_prov
+        RETURN r.provenances AS existing_prov, r.properties_json AS existing_props
         """
         write_query = """
         MATCH (a:Entity {id: $source_id}), (b:Entity {id: $target_id})
         MERGE (a)-[r:RELATES {kind: $kind}]->(b)
-        SET r.confidence = $confidence, r.provenances = $provenances_json
+        SET r.confidence = $confidence, r.provenances = $provenances_json, r.properties_json = $properties_json
         """
         try:
             with self.driver.session() as session:
@@ -145,8 +164,11 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                     kind=edge.kind.value,
                 )
                 record = result.single()
-                existing_json = record["existing_prov"] if record else None
-                merged_json = merge_provenances(existing_json, edge.provenances)
+                existing_prov = record["existing_prov"] if record else None
+                existing_props = record["existing_props"] if record else None
+                
+                merged_prov = merge_provenances(existing_prov, edge.provenances)
+                merged_props = merge_properties(existing_props, edge.properties)
 
                 session.run(
                     write_query,
@@ -154,7 +176,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                     target_id=edge.target_entity_id.value,
                     kind=edge.kind.value,
                     confidence=edge.confidence,
-                    provenances_json=merged_json,
+                    provenances_json=merged_prov,
+                    properties_json=merged_props,
                 )
         except Neo4jError as exc:
             raise ExternalServiceError(f"Failed to upsert edge: {exc}") from exc
@@ -246,6 +269,7 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                                 provenances=deserialize_provenances(
                                     neo_node.get("provenances")
                                 ),
+                                properties=json.loads(neo_node.get("properties_json") or "{}"),
                             ))
 
                     for neo_rel in record["path_rels"]:
@@ -263,6 +287,7 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                                 provenances=deserialize_provenances(
                                     neo_rel.get("provenances")
                                 ),
+                                properties=json.loads(neo_rel.get("properties_json") or "{}"),
                             ))
 
                 return Neighborhood(
@@ -298,7 +323,7 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
         MATCH (a:Entity)-[r:RELATES]->(b:Entity)
         RETURN a.id AS source, b.id AS target,
                r.kind AS kind, r.confidence AS confidence,
-               r.provenances AS provenances
+               r.provenances AS provenances, r.properties_json AS properties_json
         LIMIT {MAX_ALL_EDGES_LIMIT}
         """
         try:
@@ -311,6 +336,7 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                         kind=RelationshipKind(record["kind"]),
                         confidence=record["confidence"],
                         provenances=deserialize_provenances(record["provenances"]),
+                        properties=json.loads(record.get("properties_json") or "{}"),
                     )
                     for record in result
                 ]

@@ -102,6 +102,28 @@ export default function EntityDetail({ entityId, onClose, onExpandNeighborhood }
             </div>
           </div>
 
+          <div style={{ height: '1px', background: 'var(--panel-border)', margin: '4px 0' }} />
+
+          {/* Metadata Properties */}
+          {entity.properties && Object.keys(entity.properties).length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Metadata
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                {Object.entries(entity.properties).map(([key, value]) => (
+                  <div key={key} style={{ fontSize: '12.5px', lineHeight: '1.4', wordBreak: 'break-word' }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: '500', textTransform: 'capitalize' }}>
+                      {key.replace(/_/g, ' ')}: 
+                    </span>{' '}
+                    <span style={{ color: 'var(--text-main)' }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: '1px', background: 'var(--panel-border)', margin: '4px 0' }} />
+            </div>
+          )}
+
           <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', fontSize: '12px' }}>
             <div style={{ color: 'var(--text-dim)', marginBottom: '4px' }}>Entity ID:</div>
             <div style={{ fontFamily: 'JetBrains Mono', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{entity.entity_id}</div>

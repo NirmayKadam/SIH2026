@@ -18,6 +18,7 @@ We have successfully built and proved out the core end-to-end pipeline (Ingestio
 ### Ingestion & Extraction (The Pipeline)
 - We created a custom filter script (`scripts/load_icij_dataset.py`) to extract a clean, demo-sized slice of real data (Indian entities + connected foreign BVI shell companies) to satisfy our strict "no synthetic data" rule.
 - The `IcijDeterministicExtractorAdapter` successfully parses this data and handles edge cases where nodes and relationships are mixed in the same CSV.
+- **Dynamic Metadata Extraction:** The system now intelligently scoops up any arbitrary column (e.g. `jurisdiction`, `address`, `incorporation_date`) from structured CSVs and persists them dynamically into the graph.
 - The async RQ worker successfully ingests this data in the background and populates the graph without blocking the API.
 
 ### Graph Storage & Analytics
@@ -27,6 +28,8 @@ We have successfully built and proved out the core end-to-end pipeline (Ingestio
 ### Agentic Querying & Frontend
 - **Gemini Intent Classification**: The system successfully translates Natural Language queries (e.g., *"Who are the intermediaries for Infinity (B.V.I) Group Ltd.?"*) into a bounded set of safe Cypher intents (e.g., `neighbors_within_hops`).
 - **React SPA**: The frontend successfully displays the graph using `vis-network`, renders the analytics panel, and handles the NL query box.
+- **Enhanced UI/UX**: Overhauled the frontend with a unified full-width navigation header, collapsible tool panels, a clean Glassmorphism aesthetic, and dynamic Day/Night theme toggling.
+- **Metadata Viewer**: Built an integrated side panel to view all dynamically extracted graph properties (jurisdiction, status, etc.) when clicking on any entity node.
 
 ---
 
