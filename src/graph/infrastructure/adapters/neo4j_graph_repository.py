@@ -217,15 +217,15 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
             )
         center = self.get_node(entity_id)
 
-        path_query = """
-        MATCH p = (center:Entity {id: $id})-[*1..$depth]-(neighbor)
+        path_query = f"""
+        MATCH p = (center:Entity {{id: $id}})-[*1..{depth}]-(neighbor)
         WHERE neighbor:Entity
         RETURN nodes(p) AS path_nodes, relationships(p) AS path_rels
         """
         try:
             with self.driver.session() as session:
                 result = session.run(
-                    path_query, id=entity_id.value, depth=depth
+                    path_query, id=entity_id.value
                 )
 
                 seen_node_ids: set[str] = {entity_id.value}
