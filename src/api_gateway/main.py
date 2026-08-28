@@ -45,6 +45,20 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+from fastapi.responses import JSONResponse
+from fastapi import Request
+from shared_kernel.domain.errors import DomainError, NotFoundError
+
+@app.exception_handler(DomainError)
+async def domain_error_handler(request: Request, exc: DomainError):
+    status_code = 400
+    if isinstance(exc, NotFoundError):
+        status_code = 404
+    return JSONResponse(
+        status_code=status_code,
+        content={"message": str(exc), "error_type": exc.__class__.__name__},
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

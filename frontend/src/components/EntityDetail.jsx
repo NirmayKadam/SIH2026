@@ -42,7 +42,7 @@ export default function EntityDetail({ entityId, onClose, onExpandNeighborhood }
   };
 
   return (
-    <div className="glass-panel animate-fade-in" style={{ padding: '20px', width: '100%', position: 'relative' }}>
+    <div className="glass-panel animate-fade-in" style={{ padding: '20px', width: '100%', maxWidth: '320px', position: 'relative' }}>
       <button 
         onClick={onClose} 
         style={{ 
@@ -68,8 +68,22 @@ export default function EntityDetail({ entityId, onClose, onExpandNeighborhood }
       ) : entity ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{entity.name}</div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+            <div 
+              style={{ 
+                fontSize: '15px', 
+                fontWeight: '700', 
+                color: 'var(--text-main)',
+                wordBreak: 'break-word',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}
+              title={entity.name}
+            >
+              {entity.name}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}>
               <span style={{ 
                 padding: '2px 8px', 
                 background: 'rgba(139, 92, 246, 0.15)', 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { askQuestion, searchEntities } from '../api/client';
 
-export default function QueryBox({ onQuerySuccess, onSelectEntity }) {
+export default function QueryBox({ onQuerySuccess, onSelectEntity, transparent }) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -53,7 +53,7 @@ export default function QueryBox({ onQuerySuccess, onSelectEntity }) {
   };
 
   return (
-    <div className="glass-panel animate-fade-in" style={{ padding: '14px', width: '100%', position: 'relative' }}>
+    <div className={transparent ? "animate-fade-in" : "glass-panel animate-fade-in"} style={{ padding: transparent ? '0' : '14px', width: '100%', position: 'relative' }}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px' }}>
         <div style={{ flexGrow: 1, position: 'relative' }}>
           <input 
