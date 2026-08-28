@@ -2,9 +2,11 @@ from pydantic import BaseModel
 from shared_kernel.domain.value_objects import SourceType
 
 
+from shared_kernel.interface.validators import SanitizedString
+
 class IngestDocumentRequestDTO(BaseModel):
     source_type: SourceType
-    source_path: str  # path under data/raw/, e.g. "icij_offshore_leaks/nodes-entities.csv"
+    source_path: SanitizedString  # path under data/raw/, e.g. "icij_offshore_leaks/nodes-entities.csv"
 
 
 class IngestDocumentResponseDTO(BaseModel):

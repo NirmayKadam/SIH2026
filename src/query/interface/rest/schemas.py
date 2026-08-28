@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 
 
+from shared_kernel.interface.validators import SanitizedString
+
 class AskQuestionRequestDTO(BaseModel):
-    question: str
+    question: SanitizedString
 
 
 class AskQuestionResponseDTO(BaseModel):

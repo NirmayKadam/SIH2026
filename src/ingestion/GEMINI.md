@@ -67,9 +67,9 @@ class IngestionJobQueuePort(ABC):
 
 | Adapter | File | Status |
 |---|---|---|
-| `IcijCsvParserAdapter` | `infrastructure/adapters/icij_csv_parser.py` | Stub (`NotImplementedError`) |
-| `EnronEmailParserAdapter` | `infrastructure/adapters/enron_email_parser.py` | Stub (`NotImplementedError`) |
-| `CourtJudgmentParserAdapter` | `infrastructure/adapters/court_judgment_parser.py` | Stub (`NotImplementedError`) |
+| `IcijCsvParserAdapter` | `infrastructure/adapters/icij_csv_parser.py` | Implemented |
+| `EnronEmailParserAdapter` | `infrastructure/adapters/enron_email_parser.py` | Implemented |
+| `CourtJudgmentParserAdapter` | `infrastructure/adapters/court_judgment_parser.py` | Implemented |
 | `RedisRqJobQueueAdapter` | `infrastructure/adapters/redis_rq_job_queue.py` | Working skeleton |
 
 ## Allowed Imports
