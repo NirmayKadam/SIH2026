@@ -27,7 +27,7 @@ from shared_kernel.domain.value_objects import (
 )
 from shared_kernel.domain.errors import ExternalServiceError, RateLimitExceededError
 
-MODEL_NAME = "gemini-2.5-flash-lite"
+MODEL_NAME = "gemini-3.5-flash-lite"
 MAX_RETRIES = 3
 
 EXTRACTION_PROMPT = """You are extracting entities and relationships from a real investigative
