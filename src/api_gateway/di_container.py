@@ -58,7 +58,13 @@ def build_container() -> Container:
     job_queue = RedisRqJobQueueAdapter()
     graph_repo = Neo4jGraphRepositoryAdapter()
     analytics = NetworkxAnalyticsAdapter()
-    extractor = GeminiEntityExtractionAdapter()
+    from extraction.infrastructure.adapters.routing_entity_extractor import RoutingEntityExtractorAdapter
+    from extraction.infrastructure.adapters.icij_deterministic_extractor import IcijDeterministicExtractorAdapter
+
+    extractor = RoutingEntityExtractorAdapter(
+        icij_extractor=IcijDeterministicExtractorAdapter(),
+        gemini_extractor=GeminiEntityExtractionAdapter()
+    )
     resolver = RapidFuzzIdentityResolutionAdapter()
     intent_classifier = GeminiIntentClassifierAdapter()
 
