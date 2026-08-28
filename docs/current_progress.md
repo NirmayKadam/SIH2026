@@ -23,40 +23,37 @@ We have successfully built and proved out the core end-to-end pipeline (Ingestio
 
 ### Graph Storage & Analytics
 - **Neo4j** successfully stores nodes and relationships. We resolved Cypher parameterization bugs so the system reliably reads/writes 10,000+ nodes.
-- **Analytics** (via NetworkX) computes **Centrality** (identifying key influencers/hubs) and **Community Detection** (identifying isolated operational clusters).
-- **Suspicious Pattern Detection**: The system now dynamically detects complex anomalies directly from the graph:
-  - *High-Betweenness Facilitators* (brokers connecting isolated clusters)
-  - *Shell Company Clusters* (star topologies with high leaf node ratios)
-  - *Circular Flows* (directed money laundering loops)
+- **Analytics** (via NetworkX) successfully computes **Centrality** (identifying key influencers/hubs) and **Community Detection** (identifying isolated operational clusters), fulfilling a major PS requirement.
 
 ### Agentic Querying & Frontend
 - **Gemini Intent Classification**: The system successfully translates Natural Language queries (e.g., *"Who are the intermediaries for Infinity (B.V.I) Group Ltd.?"*) into a bounded set of safe Cypher intents (e.g., `neighbors_within_hops`).
-- **React SPA**: The frontend successfully displays the graph using `vis-network`, renders the analytics and threat panels, and handles the NL query box.
+- **React SPA**: The frontend successfully displays the graph using `vis-network`, renders the analytics panel, and handles the NL query box.
 - **Enhanced UI/UX**: Overhauled the frontend with a unified full-width navigation header, collapsible tool panels, a clean Glassmorphism aesthetic, and dynamic Day/Night theme toggling.
-- **Threat Detection Dashboard**: Added a dedicated `⚠ Threats` panel to automatically surface detected anomalies, rank them by risk score, and allow 1-click highlighting of involved entities in the graph.
 - **Metadata Viewer**: Built an integrated side panel to view all dynamically extracted graph properties (jurisdiction, status, etc.) when clicking on any entity node.
-- **Dynamic Legend**: Added a floating map legend that automatically updates to display only the entity types currently active in the view.
 
 ---
 
 ## 2. Gaps & Direction Forward (For the Teammates)
 
-To fully satisfy the scope of the SIH 2026 Problem Statement, the team needs to tackle the following areas next (refer to `roadmap.md` for detailed phasing):
+To fully satisfy the scope of the SIH 2026 Problem Statement, the team needs to tackle the following areas next:
 
-### A. Battle-Test Unstructured Extraction
-Currently, the pipeline is heavily tested on the *structured* ICIJ CSVs.
-- **Action:** The team must battle-test the `GeminiEntityExtractionAdapter` on the unstructured Enron Emails and Indian Court Judgments datasets to prove the system can extract entities from raw text accurately at scale.
-- **Action:** Fine-tune Gemini prompts for legal and email threading patterns.
-
-### B. New Data Modalities & Sources
+### A. New Data Modalities & Sources
 The PS explicitly mentions: *FIRs and police reports, Call Detail Records (CDRs), Financial transaction records, Surveillance reports, Social media intelligence, Criminal history databases.*
 - **Action:** You need to find real, anonymized, publicly available datasets for these sources. **Do not use synthetic data** (Rule 1).
 - **Action:** Build new parsers in `src/ingestion/infrastructure/adapters/` for these new formats.
 
-### C. Finishing Frontend Polish
-- **Action:** Implement loading spinners/skeletons for all async operations to improve perceived performance during heavy graph computations.
-- **Action:** Add proper error toast notifications (replacing `console.error`).
-- **Action:** Add graph filtering controls by `EntityKind` (e.g. hide all locations).
+### B. Expand the Domain Model
+The PS expects the extraction of: *people, locations, vehicles, phone numbers, and organizations.*
+- **Action:** Update `shared_kernel/domain/value_objects.py` and `docs/domain-model.md` to add `EntityKind.VEHICLE` and `EntityKind.PHONE_NUMBER`.
+- **Action:** Add appropriate `RelationshipKind` types (e.g., `owns_vehicle`, `called`).
+
+### C. Unstructured NLP Extraction
+Currently, the pipeline is heavily tested on the *structured* ICIJ CSVs.
+- **Action:** The team must battle-test the `GeminiEntityExtractionAdapter` on the unstructured Enron Emails and Indian Court Judgments datasets to prove the system can extract entities from raw text.
+
+### D. Suspicious Pattern Detection
+The PS requires the system to *"Detect suspicious patterns and unusual activities"*. While we have centrality and communities, we need specific anomaly detection.
+- **Action:** Implement a new Graph Analytics use case specifically for suspicious patterns (e.g., detecting circular money flows, bipartite graphs of shell intermediaries, or shortest paths to known blacklisted individuals).
 
 ---
 

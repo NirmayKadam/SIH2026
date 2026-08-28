@@ -66,10 +66,10 @@ The PS lists these entity types: *people, locations, vehicles, phone numbers, or
 
 ### Tasks
 
-- [x] **Add `EntityKind.VEHICLE` and `EntityKind.PHONE_NUMBER`** to `shared_kernel/domain/value_objects.py`.
-- [x] **Add `RelationshipKind.OWNS_VEHICLE`, `RelationshipKind.CALLED`, `RelationshipKind.FUNDED_BY`** to `shared_kernel/domain/value_objects.py`.
-- [x] **Update `docs/domain-model.md`** to document the new types.
-- [x] **Update the `GraphViewer.jsx`** node coloring/icons to visually distinguish the new entity kinds.
+- [ ] **Add `EntityKind.VEHICLE` and `EntityKind.PHONE_NUMBER`** to `shared_kernel/domain/value_objects.py`.
+- [ ] **Add `RelationshipKind.OWNS_VEHICLE`, `RelationshipKind.CALLED`, `RelationshipKind.FUNDED_BY`** to `shared_kernel/domain/value_objects.py`.
+- [ ] **Update `docs/domain-model.md`** to document the new types.
+- [ ] **Update the `GraphViewer.jsx`** node coloring/icons to visually distinguish the new entity kinds.
 
 ### Definition of Done
 The domain model glossary matches the PS requirements. The graph renders different node shapes/colors for vehicles and phone numbers.
@@ -82,11 +82,11 @@ The PS requires: *"Detect suspicious patterns and unusual activities"*. This is 
 
 ### Tasks
 
-- [x] **Circular money flow detection.** New use case in `src/analytics/`: detect cycles in the graph where money/transactions flow in a loop (A → B → C → A). Use `nx.simple_cycles()` on transaction edges.
-- [x] **Shell company clustering.** Detect bipartite structures where a small set of intermediaries connect to a disproportionate number of offshore entities. Flag entities with high betweenness but low degree as potential "facilitators."
-- [x] **New REST endpoint:** `GET /api/analytics/suspicious-patterns` returning detected patterns with explanations.
-- [x] **Frontend: Suspicious Patterns panel.** New tab in the bottom-left panel showing detected anomalies with click-to-highlight on the graph.
+- [ ] **Circular money flow detection.** New use case in `src/analytics/`: detect cycles in the graph where money/transactions flow in a loop (A → B → C → A). Use `nx.simple_cycles()` on transaction edges.
+- [ ] **Shell company clustering.** Detect bipartite structures where a small set of intermediaries connect to a disproportionate number of offshore entities. Flag entities with high betweenness but low degree as potential "facilitators."
 - [ ] **Shortest-path-to-flagged-entity.** Allow the user to mark entities as "flagged/suspicious" and then compute shortest paths from any new entity to the nearest flagged one.
+- [ ] **New REST endpoint:** `GET /api/analytics/suspicious-patterns` returning detected patterns with explanations.
+- [ ] **Frontend: Suspicious Patterns panel.** New tab in the bottom-left panel showing detected anomalies with click-to-highlight on the graph.
 
 ### Definition of Done
 The UI has a "Suspicious Patterns" tab that surfaces at least 2 types of automatically detected anomalies from the real dataset.
@@ -99,13 +99,13 @@ Judges see the UI first. A polished frontend with clear visual storytelling will
 
 ### Tasks
 
-- [x] **Graph legend.** Add a visual legend showing what each node color/shape means (person = blue, org = green, location = orange, etc.).
-- [x] **Onboarding empty state.** Improve the "No active graph view" screen with actionable instructions or a demo dataset quick-load button.
+- [ ] **Graph legend.** Add a visual legend showing what each node color/shape means (person = blue, org = green, location = orange, etc.).
 - [ ] **Loading states.** Add skeleton loaders or spinners for all async operations (ingestion, analytics computation, NL query).
 - [ ] **Error toasts.** Replace `console.error` calls with visible toast notifications so users understand failures.
 - [ ] **Graph filtering controls.** Allow filtering visible nodes by `EntityKind` (e.g., show only persons + organizations, hide locations).
 - [ ] **Export graph snapshot.** Button to export the current vis-network view as a PNG for reports.
 - [ ] **Responsive layout.** Ensure the UI works on a projector resolution (1280×720 and 1920×1080).
+- [ ] **Onboarding empty state.** Improve the "No active graph view" screen with actionable instructions or a demo dataset quick-load button.
 
 ### Definition of Done
 A non-technical judge can open the app, load data, explore the graph, ask a question in English, and understand the results — all without developer guidance.
