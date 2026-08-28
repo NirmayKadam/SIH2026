@@ -1,0 +1,31 @@
+node_id_start,node_id_end,rel_type,link,status,start_date,end_date,sourceID
+10041462,14100903,registered_address,registered address,,,,Panama Papers
+10166418,14090704,registered_address,registered address,,,,Panama Papers
+11001378,10203886,intermediary_of,intermediary of,,,,Panama Papers
+11001378,10128302,intermediary_of,intermediary of,,,,Panama Papers
+11001378,10132809,intermediary_of,intermediary of,,,,Panama Papers
+11003958,10196403,intermediary_of,intermediary of,,,,Panama Papers
+11008368,10159753,intermediary_of,intermediary of,,,,Panama Papers
+11009122,10023197,intermediary_of,intermediary of,,,,Panama Papers
+11009122,10026882,intermediary_of,intermediary of,,,,Panama Papers
+11009122,10168591,intermediary_of,intermediary of,,,,Panama Papers
+12031626,14000327,registered_address,registered address,,,,Panama Papers
+12050119,14000704,registered_address,registered address,,,,Panama Papers
+12050120,14000704,registered_address,registered address,,,,Panama Papers
+12060096,14000427,registered_address,registered address,,,,Panama Papers
+12060097,14000427,registered_address,registered address,,,,Panama Papers
+12060872,14000313,registered_address,registered address,,,,Panama Papers
+12060873,14000313,registered_address,registered address,,,,Panama Papers
+12060874,14000313,registered_address,registered address,,,,Panama Papers
+12060875,12060876,similar,similar name and address as,,,,
+12060875,14000313,registered_address,registered address,,,,Panama Papers
+12060876,14000313,registered_address,registered address,,,,Panama Papers
+12060877,14000313,registered_address,registered address,,,,Panama Papers
+12061686,14000906,registered_address,registered address,,,,Panama Papers
+12061959,14000313,registered_address,registered address,,,,Panama Papers
+12067894,14001025,registered_address,registered address,,,,Panama Papers
+12067893,12067894,similar,similar name and address as,,,,
+12067893,14001025,registered_address,registered address,,,,Panama Papers
+12084145,14001495,registered_address,registered address,,,,Panama Papers
+12090359,14001395,registered_address,registered address,,,,Panama Papers
+12095276,14000762,registered_address,registered address,,,,Panama Papers

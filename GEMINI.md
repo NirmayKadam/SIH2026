@@ -71,7 +71,7 @@ These types are the shared vocabulary — every context imports them from here,
 never defines its own copy:
 
 - `EntityKind` — `person`, `organization`, `account`, `location`, `event`
-- `RelationshipKind` — `communicated_with`, `transacted_with`, `officer_of`, `intermediary_of`, `present_at`, `mentioned_with`
+- `RelationshipKind` — `communicated_with`, `transacted_with`, `officer_of`, `intermediary_of`, `present_at`, `mentioned_with`, `registered_at`, `same_as`
 - `EntityId` — wraps a string ID, validated non-empty
 - `Confidence` — float 0.0–1.0, must come from real computation
 - `SourceType` — `icij_offshore_leaks`, `enron_emails`, `court_judgment`
@@ -249,7 +249,7 @@ Each bounded context has its own `GEMINI.md` scoped to that developer's needs:
 
 | Dataset | Source | Data Dir |
 |---|---|---|
-| ICIJ Offshore Leaks | `icij.org/investigations/offshore-leaks` | `data/raw/icij_offshore_leaks/` |
+| ICIJ Offshore Leaks | `icij.org/investigations/offshore-leaks` | `data/raw/icij_offshore_leaks/` (India subsample: ~4K nodes) |
 | Enron Emails | Public Enron corpus | `data/raw/enron_emails/` |
 | Indian Court Judgments | Real court judgment PDFs | `data/raw/court_judgments/` |
 

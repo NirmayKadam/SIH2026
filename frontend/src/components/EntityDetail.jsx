@@ -1,62 +1,134 @@
 import React, { useState, useEffect } from 'react';
+import { getEntityDetail, getEntityNeighbors } from '../api/client';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
-export default function EntityDetail({ entityId, onClose }) {
+export default function EntityDetail({ entityId, onClose, onExpandNeighborhood }) {
   const [entity, setEntity] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [depth, setDepth] = useState(1);
 
   useEffect(() => {
     async function fetchEntity() {
       setLoading(true);
       try {
-        const res = await fetch(`${BASE_URL}/api/graph/entities/${entityId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setEntity(data);
-        }
+        const data = await getEntityDetail(entityId);
+        setEntity(data);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     }
-    fetchEntity();
+    if (entityId) {
+      fetchEntity();
+    }
   }, [entityId]);
 
+  const handleExpand = async () => {
+    try {
+      const res = await getEntityNeighbors(entityId, depth);
+      const nodes = [
+        { id: res.center.entity_id, name: res.center.name, kind: res.center.kind },
+        ...res.nodes.map(n => ({ id: n.entity_id, name: n.name, kind: n.kind }))
+      ];
+      const edges = res.edges.map(e => ({
+        source: e.source_entity_id,
+        target: e.target_entity_id,
+        kind: e.kind
+      }));
+      onExpandNeighborhood({ nodes, edges });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="glass-panel animate-slide-left" style={{ padding: '20px', position: 'relative' }}>
+    <div className="glass-panel animate-fade-in" style={{ padding: '20px', width: '100%', position: 'relative' }}>
       <button 
         onClick={onClose} 
-        style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', padding: '5px' }}
+        style={{ 
+          position: 'absolute', 
+          top: '12px', 
+          right: '12px', 
+          background: 'transparent', 
+          border: 'none', 
+          padding: '4px 8px', 
+          color: 'var(--text-muted)',
+          fontSize: '14px' 
+        }}
       >
         ✕
       </button>
-      <h3 style={{ marginBottom: '15px', color: 'var(--neon-cyan)' }}>Entity Details</h3>
+
+      <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--neon-cyan)', letterSpacing: '0.5px', marginBottom: '12px', textTransform: 'uppercase' }}>
+        Entity Profile
+      </div>
       
       {loading ? (
-        <p style={{ color: 'var(--text-muted)' }}>Loading...</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Retrieving entity details...</p>
       ) : entity ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px' }}>
-          <div><strong>ID:</strong> <span style={{ color: 'var(--text-muted)' }}>{entity.entity_id}</span></div>
-          <div><strong>Name:</strong> {entity.name}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <strong>Type:</strong> 
-            <span style={{ 
-              marginLeft: '8px', 
-              padding: '2px 8px', 
-              background: 'rgba(139, 92, 246, 0.2)', 
-              color: 'var(--neon-purple)',
-              borderRadius: '12px',
-              fontSize: '12px'
-            }}>
-              {entity.kind}
-            </span>
+            <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{entity.name}</div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
+              <span style={{ 
+                padding: '2px 8px', 
+                background: 'rgba(139, 92, 246, 0.15)', 
+                color: '#a78bfa',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: '600',
+                textTransform: 'uppercase'
+              }}>
+                {entity.kind}
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Confidence: <strong style={{ color: 'var(--neon-emerald)' }}>{(entity.confidence * 100).toFixed(0)}%</strong>
+              </span>
+            </div>
           </div>
-          <div><strong>Confidence:</strong> {entity.confidence?.toFixed(2) || 'N/A'}</div>
+
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', fontSize: '12px' }}>
+            <div style={{ color: 'var(--text-dim)', marginBottom: '4px' }}>Entity ID:</div>
+            <div style={{ fontFamily: 'JetBrains Mono', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{entity.entity_id}</div>
+          </div>
+
+          {entity.provenances && entity.provenances.length > 0 && (
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-dim)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                Data Provenance ({entity.provenances.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '100px', overflowY: 'auto' }}>
+                {entity.provenances.map((p, idx) => (
+                  <div key={idx} style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: '4px' }}>
+                    <strong style={{ color: 'var(--neon-amber)' }}>{p.source_type}</strong>: {p.source_document_id}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+            <select 
+              value={depth} 
+              onChange={e => setDepth(Number(e.target.value))}
+              style={{ width: '80px', padding: '6px', fontSize: '12px' }}
+            >
+              <option value={1}>1 hop</option>
+              <option value={2}>2 hops</option>
+              <option value={3}>3 hops</option>
+            </select>
+            <button 
+              className="primary" 
+              onClick={handleExpand}
+              style={{ flexGrow: 1, padding: '8px 12px', fontSize: '12px' }}
+            >
+              Explore Network
+            </button>
+          </div>
         </div>
       ) : (
-        <p style={{ color: '#ef4444' }}>Failed to load entity details.</p>
+        <p style={{ color: 'var(--neon-rose)', fontSize: '13px' }}>Entity not found.</p>
       )}
     </div>
   );

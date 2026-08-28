@@ -12,6 +12,7 @@ class DocumentInput:
     document_id: str
     source_type: SourceType
     raw_text: str
+    source_path: str = ""
 
 
 @dataclass

@@ -1,25 +1,54 @@
 """
-Downloads the real ICIJ Offshore Leaks Database CSV export into data/raw/icij_offshore_leaks/.
-
-NOT YET RUNNABLE AS-IS: the exact subsample scope (which jurisdiction, which leak —
-Panama/Paradise/Pandora/Bahamas/Offshore Leaks — and which entity/officer subset) is
-not yet decided (see ARCHITECTURE.md open question). Decide that first and record it
-in docs/data-provenance.md, then fill in the download + filter logic below.
-
-Full dataset download: https://offshoreleaks.icij.org/pages/database (archive.zip)
+Loads the subsampled India ICIJ dataset into the pipeline.
+Requires the API to be running (e.g. via `make up` or `uvicorn`).
 """
 import sys
+import time
+import requests
+from pathlib import Path
 
 def main() -> None:
-    print(
-        "Subsample scope not yet decided — see docs/data-provenance.md.\n"
-        "1. Pick a jurisdiction/firm subset (recommend: filter nodes-officers.csv / "
-        "nodes-entities.csv by a single country_codes value to keep the demo graph "
-        "small, e.g. a few hundred nodes).\n"
-        "2. Download the archive from https://offshoreleaks.icij.org/pages/database\n"
-        "3. Fill in the real download + filter logic here, then remove this message."
-    )
-    sys.exit(1)
+    subsampled_dir = Path("data/raw/icij_offshore_leaks/subsampled")
+    
+    if not subsampled_dir.exists() or not list(subsampled_dir.glob("*.csv")):
+        print(f"Subsampled data not found at {subsampled_dir}.")
+        print("Please run `python scripts/subsample_icij.py` first.")
+        sys.exit(1)
+        
+    print(f"Submitting ICIJ subsample from {subsampled_dir} to ingestion API...")
+    
+    try:
+        response = requests.post(
+            "http://localhost:8000/api/ingestion/documents",
+            json={
+                "source_type": "icij_offshore_leaks",
+                "source_path": f"/app/{subsampled_dir.as_posix()}"
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        job_data = response.json()
+        job_id = job_data.get("job_id")
+        print(f"Success! Job queued with ID: {job_id}")
+        
+        print("\nChecking status...")
+        for _ in range(30):
+            status_resp = requests.get(f"http://localhost:8000/api/ingestion/documents/{job_id}", timeout=5)
+            if status_resp.ok:
+                status_data = status_resp.json()
+                status = status_data.get("status")
+                print(f"Status: {status}")
+                if status in ["parsed", "failed"]:
+                    if status == "failed":
+                        print(f"Error: {status_data.get('error_message')}")
+                    break
+            time.sleep(2)
+            
+    except requests.exceptions.RequestException as e:
+        print(f"API request failed: {e}")
+        print("Make sure the API is running (e.g., `make up`)")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

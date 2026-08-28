@@ -24,6 +24,8 @@ class RelationshipKind(str, Enum):
     INTERMEDIARY_OF = "intermediary_of"
     PRESENT_AT = "present_at"
     MENTIONED_WITH = "mentioned_with"
+    REGISTERED_AT = "registered_at"
+    SAME_AS = "same_as"
 
 
 @dataclass(frozen=True)
