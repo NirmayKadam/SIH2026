@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from shared_kernel.domain.value_objects import EntityId
-from analytics.domain.entities import CentralityScore, Community, PathResult, CentralityType
+from analytics.domain.entities import CentralityScore, Community, PathResult, CentralityType, SuspiciousPattern
 
 
 class GraphAnalyticsPort(ABC):
@@ -15,3 +15,6 @@ class GraphAnalyticsPort(ABC):
 
     @abstractmethod
     def shortest_path(self, source: EntityId, target: EntityId) -> PathResult: ...
+
+    @abstractmethod
+    def detect_suspicious_patterns(self) -> list[SuspiciousPattern]: ...

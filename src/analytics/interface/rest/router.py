@@ -4,14 +4,16 @@ Analytics REST boundary:
   GET /api/analytics/centrality?type=degree|betweenness|pagerank
   GET /api/analytics/communities
   GET /api/analytics/shortest-path?source={id}&target={id}
+  GET /api/analytics/suspicious-patterns
 """
 from fastapi import APIRouter, Depends, Query
 
 from analytics.application.use_cases.compute_centrality import ComputeCentralityUseCase
 from analytics.application.use_cases.detect_communities import DetectCommunitiesUseCase
 from analytics.application.use_cases.find_shortest_path import FindShortestPathUseCase
+from analytics.application.use_cases.detect_suspicious_patterns import DetectSuspiciousPatternsUseCase
 from analytics.domain.entities import CentralityType
-from analytics.interface.rest.schemas import CentralityScoreDTO, CommunityDTO, PathResultDTO
+from analytics.interface.rest.schemas import CentralityScoreDTO, CommunityDTO, PathResultDTO, SuspiciousPatternDTO
 from shared_kernel.domain.value_objects import EntityId
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -26,6 +28,10 @@ def get_communities_use_case() -> DetectCommunitiesUseCase:
 
 
 def get_path_use_case() -> FindShortestPathUseCase:
+    raise NotImplementedError("Dependency not wired — see api_gateway/di_container.py")
+
+
+def get_suspicious_patterns_use_case() -> DetectSuspiciousPatternsUseCase:
     raise NotImplementedError("Dependency not wired — see api_gateway/di_container.py")
 
 
@@ -60,3 +66,21 @@ def get_shortest_path(
 ) -> PathResultDTO:
     result = use_case.execute(EntityId(source), EntityId(target))
     return PathResultDTO(found=result.found, entity_ids=[e.value for e in result.entity_ids])
+
+
+@router.get("/suspicious-patterns", response_model=list[SuspiciousPatternDTO])
+def get_suspicious_patterns(
+    use_case: DetectSuspiciousPatternsUseCase = Depends(get_suspicious_patterns_use_case),
+) -> list[SuspiciousPatternDTO]:
+    patterns = use_case.execute()
+    return [
+        SuspiciousPatternDTO(
+            pattern_type=p.pattern_type.value,
+            description=p.description,
+            involved_entity_ids=[e.value for e in p.involved_entity_ids],
+            risk_score=p.risk_score,
+            details=p.details,
+        )
+        for p in patterns
+    ]
+

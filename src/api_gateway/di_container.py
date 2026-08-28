@@ -20,6 +20,7 @@ from analytics.infrastructure.adapters.networkx_analytics_adapter import Network
 from analytics.application.use_cases.compute_centrality import ComputeCentralityUseCase
 from analytics.application.use_cases.detect_communities import DetectCommunitiesUseCase
 from analytics.application.use_cases.find_shortest_path import FindShortestPathUseCase
+from analytics.application.use_cases.detect_suspicious_patterns import DetectSuspiciousPatternsUseCase
 
 from extraction.application.use_cases.extract_entities_from_document import (
     ExtractEntitiesFromDocumentUseCase,
@@ -47,6 +48,7 @@ class Container:
     compute_centrality_use_case: ComputeCentralityUseCase
     detect_communities_use_case: DetectCommunitiesUseCase
     find_shortest_path_use_case: FindShortestPathUseCase
+    detect_suspicious_patterns_use_case: DetectSuspiciousPatternsUseCase
     extract_entities_use_case: ExtractEntitiesFromDocumentUseCase
     answer_query_use_case: AnswerNaturalLanguageQueryUseCase
 
@@ -81,6 +83,7 @@ def build_container() -> Container:
         compute_centrality_use_case=compute_centrality_use_case,
         detect_communities_use_case=DetectCommunitiesUseCase(analytics),
         find_shortest_path_use_case=find_shortest_path_use_case,
+        detect_suspicious_patterns_use_case=DetectSuspiciousPatternsUseCase(analytics),
         extract_entities_use_case=ExtractEntitiesFromDocumentUseCase(extractor, resolver),
         answer_query_use_case=AnswerNaturalLanguageQueryUseCase(
             classifier=intent_classifier,
