@@ -56,3 +56,9 @@ export async function ingestDocument(sourceType, sourcePath) {
   if (!res.ok) throw new Error(`Ingestion failed: ${res.status}`);
   return res.json();
 }
+
+export async function getSuspiciousPatterns() {
+  const res = await fetch(`${BASE_URL}/api/analytics/suspicious-patterns`);
+  if (!res.ok) throw new Error(`Failed to fetch suspicious patterns: ${res.status}`);
+  return res.json();
+}

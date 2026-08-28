@@ -25,6 +25,7 @@ from graph.interface.rest.router import (
 from analytics.interface.rest.router import (
     router as analytics_router,
     get_centrality_use_case, get_communities_use_case, get_path_use_case,
+    get_suspicious_patterns_use_case,
 )
 from extraction.interface.rest.router import router as extraction_router, get_use_case as extraction_get_use_case
 from query.interface.rest.router import router as query_router, get_use_case as query_get_use_case
@@ -84,6 +85,7 @@ app.dependency_overrides[graph_get_stats] = lambda: container.get_graph_stats_us
 app.dependency_overrides[get_centrality_use_case] = lambda: container.compute_centrality_use_case
 app.dependency_overrides[get_communities_use_case] = lambda: container.detect_communities_use_case
 app.dependency_overrides[get_path_use_case] = lambda: container.find_shortest_path_use_case
+app.dependency_overrides[get_suspicious_patterns_use_case] = lambda: container.detect_suspicious_patterns_use_case
 app.dependency_overrides[query_get_use_case] = lambda: container.answer_query_use_case
 
 

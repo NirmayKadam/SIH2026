@@ -4,13 +4,14 @@ import QueryBox from './components/QueryBox';
 import EntityDetail from './components/EntityDetail';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import IngestionPanel from './components/IngestionPanel';
+import SuspiciousPatternsPanel from './components/SuspiciousPatternsPanel';
 import { getCentrality, getEntityNeighbors, getGraphStats } from './api/client';
 
 export default function App() {
   const [selectedEntityId, setSelectedEntityId] = useState(null);
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
   const [graphStats, setGraphStats] = useState({ total_nodes: 0, total_edges: 0 });
-  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'ingestion'
+  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'ingestion' | 'threats'
   const [theme, setTheme] = useState('dark');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
@@ -213,6 +214,19 @@ export default function App() {
                 >
                   Ingest Source
                 </button>
+                <button 
+                  onClick={() => setActiveTab('threats')}
+                  style={{ 
+                    flex: 1, 
+                    padding: '6px 12px', 
+                    fontSize: '12px',
+                    background: activeTab === 'threats' ? 'rgba(239, 68, 68, 0.2)' : 'var(--btn-bg)',
+                    borderColor: activeTab === 'threats' ? '#ef4444' : 'var(--panel-border)',
+                    color: activeTab === 'threats' ? '#ef4444' : 'var(--text-muted)'
+                  }}
+                >
+                  ⚠ Threats
+                </button>
               </div>
               <button 
                 onClick={() => setIsPanelOpen(false)}
@@ -225,6 +239,8 @@ export default function App() {
 
             {activeTab === 'analytics' ? (
               <AnalyticsPanel onSelectEntity={handleSelectEntity} />
+            ) : activeTab === 'threats' ? (
+              <SuspiciousPatternsPanel onSelectEntity={handleSelectEntity} />
             ) : (
               <IngestionPanel />
             )}

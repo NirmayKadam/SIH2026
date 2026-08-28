@@ -14,3 +14,12 @@ class CommunityDTO(BaseModel):
 class PathResultDTO(BaseModel):
     found: bool
     entity_ids: list[str]
+
+
+class SuspiciousPatternDTO(BaseModel):
+    pattern_type: str
+    description: str
+    involved_entity_ids: list[str]
+    risk_score: float
+    details: dict[str, str]
+

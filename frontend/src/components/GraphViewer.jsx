@@ -2,12 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network';
 
 const KIND_COLORS = {
-  person: { bg: '#1e1b4b', border: '#818cf8', highlight: '#a5b4fc', shadow: 'rgba(129, 140, 248, 0.4)' },
-  organization: { bg: '#082f49', border: '#38bdf8', highlight: '#7dd3fc', shadow: 'rgba(56, 189, 248, 0.4)' },
-  account: { bg: '#064e3b', border: '#34d399', highlight: '#6ee7b7', shadow: 'rgba(52, 211, 153, 0.4)' },
-  location: { bg: '#451a03', border: '#fb923c', highlight: '#fdba74', shadow: 'rgba(251, 146, 60, 0.4)' },
-  event: { bg: '#4c0519', border: '#fb7185', highlight: '#fda4af', shadow: 'rgba(251, 113, 133, 0.4)' },
-  default: { bg: '#18181b', border: '#a1a1aa', highlight: '#e4e4e7', shadow: 'rgba(161, 161, 170, 0.3)' }
+  person: { bg: '#1e1b4b', border: '#818cf8', highlight: '#a5b4fc', shadow: 'rgba(129, 140, 248, 0.4)', label: 'Person', icon: '👤' },
+  organization: { bg: '#082f49', border: '#38bdf8', highlight: '#7dd3fc', shadow: 'rgba(56, 189, 248, 0.4)', label: 'Organization', icon: '🏢' },
+  account: { bg: '#064e3b', border: '#34d399', highlight: '#6ee7b7', shadow: 'rgba(52, 211, 153, 0.4)', label: 'Account', icon: '💳' },
+  location: { bg: '#451a03', border: '#fb923c', highlight: '#fdba74', shadow: 'rgba(251, 146, 60, 0.4)', label: 'Location', icon: '📍' },
+  event: { bg: '#4c0519', border: '#fb7185', highlight: '#fda4af', shadow: 'rgba(251, 113, 133, 0.4)', label: 'Event', icon: '📅' },
+  vehicle: { bg: '#3b0764', border: '#c084fc', highlight: '#d8b4fe', shadow: 'rgba(192, 132, 252, 0.4)', label: 'Vehicle', icon: '🚗' },
+  phone_number: { bg: '#134e4a', border: '#2dd4bf', highlight: '#5eead4', shadow: 'rgba(45, 212, 191, 0.4)', label: 'Phone', icon: '📱' },
+  default: { bg: '#18181b', border: '#a1a1aa', highlight: '#e4e4e7', shadow: 'rgba(161, 161, 170, 0.3)', label: 'Unknown', icon: '❓' }
 };
 
 export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
@@ -114,6 +116,16 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
     }
   }, [data, selectedEntityId, onNodeClick]);
 
+  // Compute which entity kinds are present in the current data
+  const activeKinds = React.useMemo(() => {
+    const kinds = new Set();
+    (data.nodes || []).forEach(n => {
+      const k = (n.kind || '').toLowerCase();
+      if (KIND_COLORS[k]) kinds.add(k);
+    });
+    return Array.from(kinds);
+  }, [data.nodes]);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       {(!data.nodes || data.nodes.length === 0) && (
@@ -127,12 +139,53 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
           zIndex: 1,
           pointerEvents: 'none'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🕸️</div>
-          <div style={{ fontSize: '15px', fontWeight: '500' }}>No active graph view</div>
-          <div style={{ fontSize: '13px', marginTop: '4px' }}>Select an entity, search, or ask a question to explore the network</div>
+          <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.6 }}>🕸️</div>
+          <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>No active graph view</div>
+          <div style={{ fontSize: '13px', lineHeight: '1.6', maxWidth: '320px' }}>
+            Use the search bar above to find entities,<br />
+            or switch to the <strong>Ingest Source</strong> tab to load data.
+          </div>
         </div>
       )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+
+      {/* Floating Graph Legend */}
+      {activeKinds.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '12px',
+          zIndex: 5,
+          background: 'var(--bg-card)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--panel-border)',
+          borderRadius: '10px',
+          padding: '10px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '5px',
+          boxShadow: 'var(--glass-shadow)',
+        }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+            Legend
+          </div>
+          {activeKinds.map(k => {
+            const style = KIND_COLORS[k];
+            return (
+              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '10px', height: '10px', borderRadius: '50%',
+                  background: style.border, display: 'inline-block',
+                  boxShadow: `0 0 6px ${style.shadow}`,
+                }} />
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {style.icon} {style.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ class EntityKind(str, Enum):
     ACCOUNT = "account"
     LOCATION = "location"
     EVENT = "event"
+    VEHICLE = "vehicle"
+    PHONE_NUMBER = "phone_number"
 
 
 class RelationshipKind(str, Enum):
@@ -26,6 +28,9 @@ class RelationshipKind(str, Enum):
     MENTIONED_WITH = "mentioned_with"
     REGISTERED_AT = "registered_at"
     SAME_AS = "same_as"
+    OWNS_VEHICLE = "owns_vehicle"
+    CALLED = "called"
+    FUNDED_BY = "funded_by"
 
 
 @dataclass(frozen=True)
