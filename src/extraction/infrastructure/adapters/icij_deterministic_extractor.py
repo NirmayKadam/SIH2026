@@ -8,7 +8,7 @@ which CSV file the row originated (detected via JSON key signatures).
 """
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from extraction.application.ports.extraction_port import EntityExtractionPort
 from extraction.domain.entities import DocumentInput, ExtractedEntity, ExtractedRelationship
@@ -83,7 +83,7 @@ class IcijDeterministicExtractorAdapter(EntityExtractionPort):
         provenance = SourceProvenance(
             source_type=document.source_type,
             source_document_id=document.document_id,
-            ingested_at=datetime.utcnow(),
+            ingested_at=datetime.now(timezone.utc),
         )
 
         # Relationship rows have node_id_start + node_id_end
