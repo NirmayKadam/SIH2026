@@ -1,7 +1,11 @@
 .env
 __pycache__/
 *.pyc
+*.egg-info/
+build/
+dist/
 data/raw/
 .pytest_cache/
 node_modules/
 frontend/dist/
+

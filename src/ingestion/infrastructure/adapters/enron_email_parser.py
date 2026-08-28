@@ -25,11 +25,11 @@ class EnronEmailParserAdapter(DocumentParserPort):
                 if path.suffix == '.mbox':
                     mb = mailbox.mbox(path)
                     for message in mb:
-                        documents.append(self._parse_message(message, str(path)))
+                        documents.append(self.parse_message(message, str(path)))
                 elif path.suffix == '.txt' or path.suffix == '.eml':
                     with open(path, 'rb') as f:
                         msg = email.message_from_binary_file(f)
-                        documents.append(self._parse_message(msg, str(path)))
+                        documents.append(self.parse_message(msg, str(path)))
                 else:
                     raise ExternalServiceError(f"Unsupported file extension for Enron parser: {path.suffix}")
             elif path.is_dir():
@@ -38,13 +38,13 @@ class EnronEmailParserAdapter(DocumentParserPort):
                     if filepath.is_file() and (filepath.suffix in ['.txt', '.eml'] or not filepath.suffix):
                         with open(filepath, 'rb') as f:
                             msg = email.message_from_binary_file(f)
-                            documents.append(self._parse_message(msg, str(filepath)))
+                            documents.append(self.parse_message(msg, str(filepath)))
         except Exception as e:
             raise ExternalServiceError(f"Failed to parse Enron emails {source_path}: {e}")
             
         return documents
         
-    def _parse_message(self, message: Message, source_path: str) -> RawDocument:
+    def parse_message(self, message: Message, source_path: str) -> RawDocument:
         subject = message.get("Subject", "")
         from_ = message.get("From", "")
         to = message.get("To", "")
