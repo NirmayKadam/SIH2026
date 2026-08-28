@@ -1,13 +1,27 @@
-// Typed-ish client for the REST boundary defined in ARCHITECTURE.md.
-// Every function here maps 1:1 to a real backend endpoint — no mock data,
-// no placeholder responses. If the backend isn't ready yet, let the fetch fail
-// and show a real error state in the UI, don't fake a response here.
-
+// Typed client for REST backend
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export async function getEntityNeighbors(entityId, depth = 1) {
   const res = await fetch(`${BASE_URL}/api/graph/entities/${entityId}/neighbors?depth=${depth}`);
   if (!res.ok) throw new Error(`Failed to fetch neighbors: ${res.status}`);
+  return res.json();
+}
+
+export async function getEntityDetail(entityId) {
+  const res = await fetch(`${BASE_URL}/api/graph/entities/${entityId}`);
+  if (!res.ok) throw new Error(`Failed to fetch entity: ${res.status}`);
+  return res.json();
+}
+
+export async function searchEntities(q = "", limit = 20) {
+  const res = await fetch(`${BASE_URL}/api/graph/entities?q=${encodeURIComponent(q)}&limit=${limit}`);
+  if (!res.ok) throw new Error(`Failed to search entities: ${res.status}`);
+  return res.json();
+}
+
+export async function getGraphStats() {
+  const res = await fetch(`${BASE_URL}/api/graph/stats`);
+  if (!res.ok) throw new Error(`Failed to fetch stats: ${res.status}`);
   return res.json();
 }
 
@@ -30,5 +44,15 @@ export async function askQuestion(question) {
     body: JSON.stringify({ question }),
   });
   if (!res.ok) throw new Error(`Query failed: ${res.status}`);
+  return res.json();
+}
+
+export async function ingestDocument(sourceType, sourcePath) {
+  const res = await fetch(`${BASE_URL}/api/ingestion/documents`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source_type: sourceType, source_path: sourcePath }),
+  });
+  if (!res.ok) throw new Error(`Ingestion failed: ${res.status}`);
   return res.json();
 }

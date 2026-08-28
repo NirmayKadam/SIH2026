@@ -22,7 +22,7 @@ def main() -> None:
             "http://localhost:8000/api/ingestion/documents",
             json={
                 "source_type": "icij_offshore_leaks",
-                "source_path": str(subsampled_dir)
+                "source_path": f"/app/{subsampled_dir.as_posix()}"
             },
             timeout=10
         )
