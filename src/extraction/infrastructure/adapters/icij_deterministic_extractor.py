@@ -1,7 +1,8 @@
 import json
+from datetime import datetime, timezone
 from extraction.application.ports.extraction_port import EntityExtractionPort
 from extraction.domain.entities import DocumentInput, ExtractedEntity, ExtractedRelationship
-from shared_kernel.domain.value_objects import EntityKind, RelationshipKind, Confidence
+from shared_kernel.domain.value_objects import EntityKind, RelationshipKind, Confidence, EntityId, SourceProvenance
 
 class IcijDeterministicExtractorAdapter(EntityExtractionPort):
     """
@@ -13,44 +14,58 @@ class IcijDeterministicExtractorAdapter(EntityExtractionPort):
         entities = []
         relationships = []
         
+        provenance = SourceProvenance(
+            source_type=document.source_type,
+            source_document_id=document.document_id,
+            ingested_at=datetime.now(timezone.utc),
+        )
+
         try:
             row = json.loads(document.raw_text)
             
-            if "node_id_start" in row and "node_id_end" in row:
-                source_id = row.get("node_id_start", "")
-                target_id = row.get("node_id_end", "")
+            source_id_val = row.get("node_id_start", "")
+            target_id_val = row.get("node_id_end", "")
+            node_id_val = row.get("node_id", "")
+            name = row.get("name", "")
+            
+            if source_id_val and target_id_val:
                 link = row.get("link", "").lower()
-                
-                if source_id and target_id:
-                    kind = RelationshipKind.MENTIONED_WITH
-                    if "officer" in link or "shareholder" in link or "director" in link:
-                        kind = RelationshipKind.OFFICER_OF
-                    elif "intermediary" in link:
-                        kind = RelationshipKind.INTERMEDIARY_OF
-                        
-                    relationships.append(
-                        ExtractedRelationship(
-                            source_name=source_id,
-                            target_name=target_id,
-                            kind=kind,
-                            confidence=Confidence(1.0)
-                        )
+                kind = RelationshipKind.MENTIONED_WITH
+                if "officer" in link or "shareholder" in link or "director" in link:
+                    kind = RelationshipKind.OFFICER_OF
+                elif "intermediary" in link:
+                    kind = RelationshipKind.INTERMEDIARY_OF
+                    
+                relationships.append(
+                    ExtractedRelationship(
+                        source_entity_id=EntityId(str(source_id_val)),
+                        target_entity_id=EntityId(str(target_id_val)),
+                        kind=kind,
+                        confidence=Confidence(1.0),
+                        provenance=provenance
                     )
-            elif "node_id" in row or "name" in row:
-                name = row.get("name", "")
-                if not name and "node_id" in row:
-                    name = row["node_id"]
+                )
+            
+            if node_id_val or name:
+                if not name and node_id_val:
+                    name = str(node_id_val)
+                    
+                if not node_id_val and name:
+                    node_id_val = name
                 
                 kind = EntityKind.ORGANIZATION
-                if "officer" in document.source_path.lower():
+                row_type = row.get("type", "") or row.get("company_type", "") or ""
+                if "officer" in row_type.lower() or "person" in row_type.lower():
                     kind = EntityKind.PERSON
                     
-                if name:
+                if node_id_val:
                     entities.append(
                         ExtractedEntity(
+                            entity_id=EntityId(str(node_id_val)),
                             name=name,
                             kind=kind,
-                            confidence=Confidence(1.0)
+                            confidence=Confidence(1.0),
+                            provenance=provenance
                         )
                     )
         except json.JSONDecodeError:

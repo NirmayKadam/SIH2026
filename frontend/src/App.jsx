@@ -12,7 +12,7 @@ export default function App() {
 
   const handleQuerySuccess = (data, intent, explanation) => {
     setQueryResult({ intent, data, explanation });
-    if (intent === 'NEIGHBORS_WITHIN_HOPS' && data.nodes) {
+    if (intent === 'neighbors_within_hops' && data.nodes) {
       setGraphData({ nodes: data.nodes, edges: data.edges || [] });
     }
   };

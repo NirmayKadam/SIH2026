@@ -14,7 +14,7 @@ import json
 import os
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import google.generativeai as genai
 
@@ -90,7 +90,7 @@ class GeminiEntityExtractionAdapter(EntityExtractionPort):
         provenance = SourceProvenance(
             source_type=document.source_type,
             source_document_id=document.document_id,
-            ingested_at=datetime.utcnow(),
+            ingested_at=datetime.now(timezone.utc),
         )
 
         name_to_id: dict[str, EntityId] = {}
