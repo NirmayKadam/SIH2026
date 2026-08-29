@@ -12,8 +12,10 @@ from analytics.application.use_cases.compute_centrality import ComputeCentrality
 from analytics.application.use_cases.detect_communities import DetectCommunitiesUseCase
 from analytics.application.use_cases.find_shortest_path import FindShortestPathUseCase
 from analytics.application.use_cases.detect_suspicious_patterns import DetectSuspiciousPatternsUseCase
+from analytics.application.use_cases.flag_entity import FlagEntityUseCase
+from analytics.application.use_cases.find_shortest_path_to_flagged import FindShortestPathToFlaggedUseCase
 from analytics.domain.entities import CentralityType
-from analytics.interface.rest.schemas import CentralityScoreDTO, CommunityDTO, PathResultDTO, SuspiciousPatternDTO
+from analytics.interface.rest.schemas import CentralityScoreDTO, CommunityDTO, PathResultDTO, SuspiciousPatternDTO, FlagEntityRequestDTO
 from shared_kernel.domain.value_objects import EntityId
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -32,6 +34,14 @@ def get_path_use_case() -> FindShortestPathUseCase:
 
 
 def get_suspicious_patterns_use_case() -> DetectSuspiciousPatternsUseCase:
+    raise NotImplementedError("Dependency not wired — see api_gateway/di_container.py")
+
+
+def get_flag_entity_use_case() -> FlagEntityUseCase:
+    raise NotImplementedError("Dependency not wired — see api_gateway/di_container.py")
+
+
+def get_shortest_path_to_flagged_use_case() -> FindShortestPathToFlaggedUseCase:
     raise NotImplementedError("Dependency not wired — see api_gateway/di_container.py")
 
 
@@ -84,3 +94,20 @@ def get_suspicious_patterns(
         for p in patterns
     ]
 
+
+@router.post("/flagged-entities", response_model=dict)
+def flag_entity(
+    request: FlagEntityRequestDTO,
+    use_case: FlagEntityUseCase = Depends(get_flag_entity_use_case),
+) -> dict:
+    use_case.execute(EntityId(request.entity_id))
+    return {"status": "success", "flagged_entity_id": request.entity_id}
+
+
+@router.get("/shortest-path-to-flagged", response_model=PathResultDTO)
+def get_shortest_path_to_flagged(
+    source: str,
+    use_case: FindShortestPathToFlaggedUseCase = Depends(get_shortest_path_to_flagged_use_case),
+) -> PathResultDTO:
+    result = use_case.execute(EntityId(source))
+    return PathResultDTO(found=result.found, entity_ids=[e.value for e in result.entity_ids])

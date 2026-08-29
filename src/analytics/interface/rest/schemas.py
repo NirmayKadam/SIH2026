@@ -23,3 +23,6 @@ class SuspiciousPatternDTO(BaseModel):
     risk_score: float
     details: dict[str, str]
 
+
+class FlagEntityRequestDTO(BaseModel):
+    entity_id: str
