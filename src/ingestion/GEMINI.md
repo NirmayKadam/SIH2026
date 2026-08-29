@@ -62,6 +62,7 @@ class IngestionJobQueuePort(ABC):
 |---|---|---|---|
 | POST | `/api/ingestion/documents` | `{source_type, source_path}` | `{job_id}` |
 | GET | `/api/ingestion/documents/{job_id}` | — | `{job_id, status, error_message}` |
+| POST | `/api/ingestion/upload` | `multipart/form-data (file, source_type)` | `{job_id, filename, status}` |
 
 ## Adapters to Implement
 
@@ -92,12 +93,12 @@ class IngestionJobQueuePort(ABC):
 
 Currently ingestion only accepts server-side path. Need actual file upload for demo.
 
-- [ ] New endpoint: `POST /api/ingestion/upload` — accepts `multipart/form-data`
-- [ ] Validate file type (`.csv`, `.mbox`, `.pdf`)
-- [ ] Save uploaded file to `data/uploads/<uuid>_<filename>`
-- [ ] Trigger same `IngestDocumentUseCase` pipeline as path-based endpoint
-- [ ] Return `{ job_id, filename, status: "queued" }`
-- [ ] Add `data/uploads/` to `.gitignore`
+- [x] New endpoint: `POST /api/ingestion/upload` — accepts `multipart/form-data`
+- [x] Validate file type (`.csv`, `.mbox`, `.pdf`)
+- [x] Save uploaded file to `data/uploads/<uuid>_<filename>`
+- [x] Trigger same `IngestDocumentUseCase` pipeline as path-based endpoint
+- [x] Return `{ job_id, filename, status: "queued" }`
+- [x] Add `data/uploads/` to `.gitignore`
 
 ### Battle-Test Unstructured Extraction (Owner: Teammate B)
 
