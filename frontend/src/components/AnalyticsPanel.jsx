@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getCentrality, getCommunities, getEntityDetail } from '../api/client';
+import { useToast } from './ToastProvider';
 
 export default function AnalyticsPanel({ onSelectEntity }) {
   const [stats, setStats] = useState({ centrality: [], communities: [] });
   const [loading, setLoading] = useState(false);
   const [centralityType, setCentralityType] = useState('degree');
+  const toast = useToast();
 
   useEffect(() => {
     async function fetchStats() {
@@ -32,7 +34,7 @@ export default function AnalyticsPanel({ onSelectEntity }) {
           communities: communityData 
         });
       } catch (err) {
-        console.error("Failed to load analytics", err);
+        toast.error(`Failed to load analytics: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -58,7 +60,20 @@ export default function AnalyticsPanel({ onSelectEntity }) {
       </div>
       
       {loading ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Computing graph metrics...</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            Computing graph metrics...
+          </div>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <div className="skeleton skeleton-line medium" style={{ height: '12px' }} />
+                <div className="skeleton skeleton-line short" style={{ height: '10px' }} />
+              </div>
+              <div className="skeleton" style={{ width: '50px', height: '18px', borderRadius: '4px', marginLeft: '8px' }} />
+            </div>
+          ))}
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>

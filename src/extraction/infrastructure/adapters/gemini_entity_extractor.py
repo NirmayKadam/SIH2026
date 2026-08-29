@@ -30,16 +30,41 @@ from shared_kernel.domain.errors import ExternalServiceError, RateLimitExceededE
 MODEL_NAME = "gemini-3.5-flash-lite"
 MAX_RETRIES = 3
 
-EXTRACTION_PROMPT = """You are extracting entities and relationships from a real investigative
-document for a criminal network analysis system. Return ONLY valid JSON, no prose, no markdown
-fences, matching this schema exactly:
+EXTRACTION_PROMPT = """You are an expert investigative analyst extracting entities and relationships from
+a real document for a criminal network analysis system. The document may be an email (with From/To/CC
+headers), a court judgment (legal language), a financial record, or a structured dataset row.
+
+Return ONLY valid JSON, no prose, no markdown fences, matching this schema exactly:
 
 {{
-  "entities": [{{"name": str, "kind": "person"|"organization"|"account"|"location"|"event", "confidence": float}}],
-  "relationships": [{{"source_name": str, "target_name": str, "kind": "communicated_with"|"transacted_with"|"officer_of"|"intermediary_of"|"present_at"|"mentioned_with", "confidence": float}}]
+  "entities": [
+    {{"name": str, "kind": "person"|"organization"|"account"|"location"|"event"|"vehicle"|"phone_number", "confidence": float}}
+  ],
+  "relationships": [
+    {{"source_name": str, "target_name": str, "kind": str, "confidence": float}}
+  ]
 }}
 
-confidence must be your genuine model confidence (0.0-1.0) for that extraction, not a placeholder.
+Allowed relationship kinds (use ONLY these):
+- "communicated_with" — email/message exchange between persons
+- "transacted_with" — financial transaction between entities
+- "officer_of" — person serves as officer/director of an organization
+- "intermediary_of" — entity acts as intermediary for another entity
+- "present_at" — entity present at a location or event
+- "mentioned_with" — co-occurrence in text (e.g., named together in a judgment)
+- "registered_at" — entity registered at a location/address
+- "same_as" — two names refer to the same real-world entity (aliases)
+- "owns_vehicle" — person or organization owns/is registered to a vehicle
+- "called" — phone communication between entities
+- "funded_by" — financial funding relationship
+
+Extraction rules:
+1. "confidence" must be your genuine model confidence (0.0-1.0), not a placeholder.
+2. For emails: extract sender and all recipients as person entities, infer "communicated_with" relationships.
+3. For legal text: extract accused persons, organizations, locations, and "mentioned_with" relationships.
+4. Extract phone numbers in any format as "phone_number" entities.
+5. Extract vehicle registrations, license plates, or vehicle descriptions as "vehicle" entities.
+6. Do NOT fabricate entities not present in the text.
 
 Document text:
 ---
