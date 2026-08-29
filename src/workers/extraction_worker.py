@@ -18,10 +18,11 @@ from extraction.infrastructure.adapters.gemini_entity_extractor import GeminiEnt
 from extraction.infrastructure.adapters.rapidfuzz_identity_resolver import (
     RapidFuzzIdentityResolutionAdapter,
 )
-from extraction.domain.entities import DocumentInput
+from extraction.domain.entities import DocumentInput, ExtractedRelationship
 from graph.application.use_cases.persist_extraction_result import PersistExtractionResultUseCase
 from graph.infrastructure.adapters.neo4j_graph_repository import Neo4jGraphRepositoryAdapter
-from shared_kernel.domain.value_objects import SourceType
+from shared_kernel.domain.value_objects import SourceType, SourceProvenance, RelationshipKind, Confidence
+from datetime import datetime, timezone
 
 _PARSERS = {
     SourceType.ICIJ_OFFSHORE_LEAKS: IcijCsvParserAdapter,
@@ -57,8 +58,26 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
             source_path=document.source_path,
         )
         entities, relationships, _candidates = extract_use_case.execute(doc_input)
+        
+        # Persist high-confidence resolution candidates as explicit SAME_AS relationships
+        # instead of auto-merging blindly, enabling human review or graph-based alias resolution.
+        provenance = SourceProvenance(
+            source_type=document.source_type,
+            source_document_id=document.document_id,
+            ingested_at=datetime.now(timezone.utc),
+        )
+        for candidate in _candidates:
+            if candidate.similarity_score > 0.85:
+                relationships.append(
+                    ExtractedRelationship(
+                        source_entity_id=candidate.entity_a,
+                        target_entity_id=candidate.entity_b,
+                        kind=RelationshipKind.SAME_AS,
+                        confidence=Confidence(candidate.similarity_score),
+                        provenance=provenance,
+                    )
+                )
+
         persist_use_case.execute(entities, relationships)
-        # TODO: resolution candidates need a real merge decision path — don't auto-merge
-        # blindly; surface to a human reviewer or apply a confirmed threshold policy.
 
     graph_repo.close()

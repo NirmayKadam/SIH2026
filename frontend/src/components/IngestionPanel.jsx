@@ -5,26 +5,36 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export default function IngestionPanel() {
   const [sourceType, setSourceType] = useState('icij_offshore_leaks');
-  const [sourcePath, setSourcePath] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
   const handleIngest = async (e) => {
     e.preventDefault();
+    if (!selectedFile) {
+      toast.warning('Please select a file first.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/ingestion/documents`, {
+      const formData = new FormData();
+      formData.append('source_type', sourceType);
+      formData.append('file', selectedFile);
+
+      const res = await fetch(`${BASE_URL}/api/ingestion/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_type: sourceType, source_path: sourcePath })
+        body: formData
       });
+      
       if (!res.ok) {
         const errorText = await res.text().catch(() => 'Unknown error');
         throw new Error(`Ingestion failed (${res.status}): ${errorText.slice(0, 100)}`);
       }
       const data = await res.json();
       toast.success(`Ingestion job started: ${data.job_id}`);
-      setSourcePath('');
+      setSelectedFile(null);
+      if (e.target) e.target.reset(); // clear file input visually
     } catch (err) {
       toast.error(`Ingestion failed: ${err.message}`);
     } finally {
@@ -45,23 +55,22 @@ export default function IngestionPanel() {
           disabled={loading}
           style={{ padding: '8px 10px', fontSize: '12px', borderRadius: '8px' }}
         >
-          <option value="icij_offshore_leaks">ICIJ Offshore Leaks</option>
-          <option value="enron_emails">Enron Emails</option>
-          <option value="court_judgment">Court Judgments</option>
+          <option value="icij_offshore_leaks">ICIJ Offshore Leaks (CSV)</option>
+          <option value="enron_emails">Enron Emails (Mbox)</option>
+          <option value="court_judgment">Court Judgments (PDF)</option>
         </select>
         
         <input 
-          type="text" 
-          placeholder="Path to data file or folder..." 
-          value={sourcePath} 
-          onChange={e => setSourcePath(e.target.value)} 
+          type="file" 
+          onChange={e => setSelectedFile(e.target.files[0] || null)} 
           required 
           disabled={loading}
+          style={{ padding: '8px', fontSize: '12px' }}
         />
         
         <button 
           type="submit" 
-          disabled={loading || !sourcePath.trim()} 
+          disabled={loading || !selectedFile} 
           style={{ 
             background: loading ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.2)', 
             color: 'var(--neon-amber)', 
@@ -75,9 +84,9 @@ export default function IngestionPanel() {
                 borderTopColor: 'var(--neon-amber)', borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite', display: 'inline-block',
               }} />
-              Submitting...
+              Uploading...
             </>
-          ) : 'Ingest Data'}
+          ) : 'Upload & Ingest'}
         </button>
       </form>
 
