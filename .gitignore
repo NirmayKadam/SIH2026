@@ -8,4 +8,4 @@ data/raw/
 .pytest_cache/
 node_modules/
 frontend/dist/
-
+data/uploads/

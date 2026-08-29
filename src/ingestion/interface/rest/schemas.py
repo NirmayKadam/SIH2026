@@ -13,6 +13,13 @@ class IngestDocumentResponseDTO(BaseModel):
     job_id: str
 
 
+class UploadDocumentResponseDTO(BaseModel):
+    job_id: str
+    filename: str
+    status: str
+
+
+
 class IngestionJobStatusResponseDTO(BaseModel):
     job_id: str
     status: str
