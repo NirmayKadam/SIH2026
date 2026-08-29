@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { askQuestion, searchEntities } from '../api/client';
+import { useToast } from './ToastProvider';
 
 export default function QueryBox({ onQuerySuccess, onSelectEntity, transparent }) {
   const [query, setQuery] = useState('');
@@ -7,6 +8,7 @@ export default function QueryBox({ onQuerySuccess, onSelectEntity, transparent }
   const [error, setError] = useState(null);
   const [resultMsg, setResultMsg] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
+  const toast = useToast();
 
   const handleSearch = async (val) => {
     setQuery(val);
@@ -41,6 +43,7 @@ export default function QueryBox({ onQuerySuccess, onSelectEntity, transparent }
       onQuerySuccess(response.result, response.intent, response.explanation);
     } catch (err) {
       setError(err.message);
+      toast.error(`Query failed: ${err.message}`);
     } finally {
       setLoading(false);
     }

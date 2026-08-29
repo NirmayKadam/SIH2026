@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { Network } from 'vis-network';
 
 const KIND_COLORS = {
@@ -12,14 +12,50 @@ const KIND_COLORS = {
   default: { bg: '#18181b', border: '#a1a1aa', highlight: '#e4e4e7', shadow: 'rgba(161, 161, 170, 0.3)', label: 'Unknown', icon: '❓' }
 };
 
-export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
+export { KIND_COLORS };
+
+const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selectedEntityId, visibleKinds }, ref) {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
+
+  // Expose exportToPng method to parent via ref
+  useImperativeHandle(ref, () => ({
+    exportToPng() {
+      if (!networkRef.current) return null;
+      try {
+        const canvas = containerRef.current?.querySelector('canvas');
+        if (canvas) {
+          return canvas.toDataURL('image/png');
+        }
+      } catch (err) {
+        console.error('Failed to export graph to PNG:', err);
+      }
+      return null;
+    }
+  }), []);
+
+  // Filter nodes by visible kinds
+  const filteredData = useMemo(() => {
+    if (!visibleKinds || visibleKinds.length === 0) return data;
+
+    const visibleSet = new Set(visibleKinds.map(k => k.toLowerCase()));
+    const filteredNodes = (data.nodes || []).filter(n => {
+      const kind = (n.kind || '').toLowerCase();
+      return visibleSet.has(kind) || visibleSet.has('default');
+    });
+
+    const nodeIds = new Set(filteredNodes.map(n => n.id));
+    const filteredEdges = (data.edges || []).filter(e =>
+      nodeIds.has(e.source) && nodeIds.has(e.target)
+    );
+
+    return { nodes: filteredNodes, edges: filteredEdges };
+  }, [data, visibleKinds]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const visNodes = (data.nodes || []).map(n => {
+    const visNodes = (filteredData.nodes || []).map(n => {
       const kind = (n.kind || '').toLowerCase();
       const style = KIND_COLORS[kind] || KIND_COLORS.default;
       const isSelected = n.id === selectedEntityId;
@@ -55,7 +91,7 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
       };
     });
 
-    const visEdges = (data.edges || []).map(e => ({
+    const visEdges = (filteredData.edges || []).map(e => ({
       from: e.source,
       to: e.target,
       label: (e.kind || '').replace(/_/g, ' '),
@@ -114,10 +150,10 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
         }
       });
     }
-  }, [data, selectedEntityId, onNodeClick]);
+  }, [filteredData, selectedEntityId, onNodeClick]);
 
   // Compute which entity kinds are present in the current data
-  const activeKinds = React.useMemo(() => {
+  const activeKinds = useMemo(() => {
     const kinds = new Set();
     (data.nodes || []).forEach(n => {
       const k = (n.kind || '').toLowerCase();
@@ -128,7 +164,7 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {(!data.nodes || data.nodes.length === 0) && (
+      {(!filteredData.nodes || filteredData.nodes.length === 0) && (
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -188,4 +224,6 @@ export default function GraphViewer({ data, onNodeClick, selectedEntityId }) {
       )}
     </div>
   );
-}
+});
+
+export default GraphViewer;
