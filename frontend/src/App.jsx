@@ -1,19 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import GraphViewer from './components/GraphViewer';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import GraphViewer, { KIND_COLORS } from './components/GraphViewer';
 import QueryBox from './components/QueryBox';
 import EntityDetail from './components/EntityDetail';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import IngestionPanel from './components/IngestionPanel';
 import SuspiciousPatternsPanel from './components/SuspiciousPatternsPanel';
+import ToastProvider, { useToast } from './components/ToastProvider';
 import { getCentrality, getEntityNeighbors, getGraphStats } from './api/client';
 
-export default function App() {
+function AppContent() {
   const [selectedEntityId, setSelectedEntityId] = useState(null);
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
   const [graphStats, setGraphStats] = useState({ total_nodes: 0, total_edges: 0 });
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' | 'ingestion' | 'threats'
   const [theme, setTheme] = useState('dark');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [visibleKinds, setVisibleKinds] = useState(null); // null = show all
+  const graphRef = useRef(null);
+  const toast = useToast();
 
   // Apply theme to body
   useEffect(() => {
@@ -23,8 +28,58 @@ export default function App() {
       document.body.classList.remove('theme-light');
     }
   }, [theme]);
+
+  // Collect all unique entity kinds from data
+  const allKinds = useMemo(() => {
+    const kinds = new Set();
+    (graphData.nodes || []).forEach(n => {
+      const k = (n.kind || '').toLowerCase();
+      if (KIND_COLORS[k]) kinds.add(k);
+    });
+    return Array.from(kinds);
+  }, [graphData.nodes]);
+
+  // Toggle a kind in the filter
+  const toggleKind = (kind) => {
+    setVisibleKinds(prev => {
+      if (prev === null) {
+        // Currently showing all — switch to showing all except this one
+        return allKinds.filter(k => k !== kind);
+      }
+      if (prev.includes(kind)) {
+        const next = prev.filter(k => k !== kind);
+        // If removing would leave zero, reset to show all
+        return next.length === 0 ? null : next;
+      }
+      const next = [...prev, kind];
+      // If all are now selected, reset to null (show all)
+      return next.length >= allKinds.length ? null : next;
+    });
+  };
+
+  // Check if a kind is currently visible
+  const isKindVisible = (kind) => {
+    return visibleKinds === null || visibleKinds.includes(kind);
+  };
+
+  // Export graph as PNG
+  const handleExportPng = () => {
+    if (!graphRef.current) return;
+    const dataUrl = graphRef.current.exportToPng();
+    if (dataUrl) {
+      const link = document.createElement('a');
+      link.download = `network-graph-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Graph exported as PNG');
+    } else {
+      toast.warning('No graph to export');
+    }
+  };
+
   // Load initial graph cluster from top degree nodes
   const loadInitialGraph = useCallback(async () => {
+    setInitialLoading(true);
     try {
       const stats = await getGraphStats().catch(() => ({ total_nodes: 0, total_edges: 0 }));
       setGraphStats(stats);
@@ -47,9 +102,11 @@ export default function App() {
         setGraphData({ nodes, edges });
       }
     } catch (err) {
-      console.error("Failed to load initial graph view", err);
+      toast.error(`Failed to load initial graph: ${err.message}`);
+    } finally {
+      setInitialLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     loadInitialGraph();
@@ -70,13 +127,14 @@ export default function App() {
       }));
       setGraphData({ nodes, edges });
     } catch (err) {
-      console.error("Failed to fetch neighborhood for entity", entityId, err);
+      toast.error(`Failed to load entity neighborhood: ${err.message}`);
     }
   };
 
   const handleQuerySuccess = (data, intent, explanation) => {
     if (data && data.nodes) {
       setGraphData({ nodes: data.nodes, edges: data.edges || [] });
+      toast.success(`Query resolved (intent: ${intent})`);
     }
   };
 
@@ -84,11 +142,28 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       {/* Background Fullscreen Network Canvas */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <GraphViewer 
-          data={graphData} 
-          onNodeClick={handleSelectEntity} 
-          selectedEntityId={selectedEntityId}
-        />
+        {initialLoading ? (
+          <div style={{
+            width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: '16px',
+          }}>
+            <div style={{
+              width: '48px', height: '48px', border: '3px solid var(--panel-border)',
+              borderTopColor: 'var(--neon-cyan)', borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }} />
+            <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading network graph...</span>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        ) : (
+          <GraphViewer 
+            ref={graphRef}
+            data={graphData} 
+            onNodeClick={handleSelectEntity} 
+            selectedEntityId={selectedEntityId}
+            visibleKinds={visibleKinds}
+          />
+        )}
       </div>
 
       {/* Unified Top Navigation Bar */}
@@ -133,8 +208,29 @@ export default function App() {
           />
         </div>
 
-        {/* Right: Theme Toggle */}
-        <div>
+        {/* Right: Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Export PNG */}
+          <button 
+            onClick={handleExportPng}
+            title="Export graph as PNG"
+            style={{ 
+              background: 'rgba(0,0,0,0.05)', 
+              border: '1px solid var(--panel-border)', 
+              borderRadius: '8px', 
+              width: '40px', 
+              height: '40px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontSize: '16px',
+              cursor: 'pointer'
+            }}
+          >
+            📸
+          </button>
+
+          {/* Theme Toggle */}
           <button 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             style={{ 
@@ -155,6 +251,44 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {/* Entity Kind Filter Bar (below nav) */}
+      {allKinds.length > 1 && (
+        <div style={{
+          position: 'absolute',
+          top: '66px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 25,
+          display: 'flex',
+          gap: '6px',
+          padding: '6px 12px',
+          background: 'var(--bg-card)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '20px',
+          border: '1px solid var(--panel-border)',
+        }}>
+          {allKinds.map(kind => {
+            const style = KIND_COLORS[kind] || KIND_COLORS.default;
+            const active = isKindVisible(kind);
+            return (
+              <button
+                key={kind}
+                onClick={() => toggleKind(kind)}
+                className={`filter-chip ${active ? 'active' : ''}`}
+                title={`${active ? 'Hide' : 'Show'} ${style.label} entities`}
+              >
+                <span style={{
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: active ? style.border : 'var(--text-dim)',
+                  display: 'inline-block',
+                }} />
+                {style.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Right Drawer: Entity Detail (if selected) */}
       {selectedEntityId && (
@@ -264,5 +398,13 @@ export default function App() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }

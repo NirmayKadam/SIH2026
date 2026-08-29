@@ -208,3 +208,158 @@ button:disabled {
 .vis-network:focus {
   outline: none;
 }
+
+/* ============ Toast Notifications ============ */
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.toast-item {
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  padding: 12px 14px;
+  border-radius: 10px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  line-height: 1.4;
+  min-width: 260px;
+}
+
+.toast-icon {
+  font-size: 14px;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+.toast-close {
+  background: none !important;
+  border: none !important;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 !important;
+  min-width: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  color: var(--text-main);
+}
+
+.toast-success {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.toast-success .toast-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+.toast-error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.toast-error .toast-icon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.toast-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.toast-warning .toast-icon { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+.toast-info {
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+.toast-info .toast-icon { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+
+/* ============ Skeleton Loading ============ */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.skeleton-line {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton-line.short { width: 60%; }
+.skeleton-line.medium { width: 80%; }
+.skeleton-line.full { width: 100%; }
+
+.skeleton-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+/* ============ Entity Filter Toolbar ============ */
+.filter-toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-chip {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  font-weight: 500 !important;
+}
+
+.filter-chip.active {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  color: var(--neon-cyan) !important;
+}
+
+.filter-chip:not(.active) {
+  opacity: 0.5;
+}
+
+/* ============ Responsive Layout ============ */
+@media (max-width: 1366px) {
+  .app-header {
+    padding: 8px 14px;
+  }
+
+  .badge-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-height: 768px) {
+  .glass-panel {
+    border-radius: 10px;
+  }
+}

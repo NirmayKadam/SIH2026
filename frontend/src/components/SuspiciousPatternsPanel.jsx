@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSuspiciousPatterns } from '../api/client';
+import { useToast } from './ToastProvider';
 
 const PATTERN_ICONS = {
   'shell_company_cluster': '🏢',
@@ -29,6 +30,7 @@ export default function SuspiciousPatternsPanel({ onSelectEntity }) {
   const [patterns, setPatterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedIdx, setExpandedIdx] = useState(null);
+  const toast = useToast();
 
   useEffect(() => {
     async function fetchPatterns() {
@@ -37,7 +39,7 @@ export default function SuspiciousPatternsPanel({ onSelectEntity }) {
         const data = await getSuspiciousPatterns();
         setPatterns(data);
       } catch (err) {
-        console.error('Failed to load suspicious patterns', err);
+        toast.error('Failed to load suspicious patterns');
       } finally {
         setLoading(false);
       }
