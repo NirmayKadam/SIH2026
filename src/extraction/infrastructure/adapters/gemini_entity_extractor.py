@@ -60,8 +60,8 @@ Allowed relationship kinds (use ONLY these):
 
 Extraction rules:
 1. "confidence" must be your genuine model confidence (0.0-1.0), not a placeholder.
-2. For emails: extract sender and all recipients as person entities, infer "communicated_with" relationships.
-3. For legal text: extract accused persons, organizations, locations, and "mentioned_with" relationships.
+2. For emails (including threaded/forwarded chains): extract sender (From) and all recipients (To/CC) as person entities, and infer "communicated_with" relationships between them.
+3. For legal judgments: extract judges, accused persons, and involved organizations. Extract case numbers and statutes as "event" or "organization" entities, and infer "mentioned_with" relationships between them.
 4. Extract phone numbers in any format as "phone_number" entities.
 5. Extract vehicle registrations, license plates, or vehicle descriptions as "vehicle" entities.
 6. Do NOT fabricate entities not present in the text.
