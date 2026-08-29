@@ -8,7 +8,11 @@ This router is the ONLY place ingestion exposes itself externally. Internally, o
 contexts should not call these HTTP endpoints — they'd get access via the composition
 root's wired-up ports instead (see api_gateway/di_container.py).
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+import shutil
+import uuid
+from pathlib import Path
+
 
 from ingestion.application.use_cases.ingest_document import IngestDocumentUseCase
 from ingestion.application.ports.job_queue_port import IngestionJobQueuePort
@@ -16,8 +20,10 @@ from ingestion.interface.rest.schemas import (
     IngestDocumentRequestDTO,
     IngestDocumentResponseDTO,
     IngestionJobStatusResponseDTO,
+    UploadDocumentResponseDTO,
 )
 from shared_kernel.domain.errors import NotFoundError
+from shared_kernel.domain.value_objects import SourceType
 
 router = APIRouter(prefix="/api/ingestion", tags=["ingestion"])
 
@@ -38,6 +44,38 @@ def submit_document(
 ) -> IngestDocumentResponseDTO:
     job_id = use_case.execute(source_type=body.source_type, source_path=body.source_path)
     return IngestDocumentResponseDTO(job_id=job_id)
+
+
+@router.post("/upload", response_model=UploadDocumentResponseDTO)
+def upload_document(
+    source_type: SourceType = Form(...),
+    file: UploadFile = File(...),
+    use_case: IngestDocumentUseCase = Depends(get_use_case),
+) -> UploadDocumentResponseDTO:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename missing")
+    
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".csv", ".mbox", ".pdf", ".txt", ".eml"}:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+    
+    upload_dir = Path("data/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    safe_filename = f"{uuid.uuid4()}_{file.filename}"
+    file_path = upload_dir / safe_filename
+    
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    job_id = use_case.execute(source_type=source_type, source_path=str(file_path))
+    
+    return UploadDocumentResponseDTO(
+        job_id=job_id,
+        filename=file.filename,
+        status="queued"
+    )
+
 
 
 @router.get("/documents/{job_id}", response_model=IngestionJobStatusResponseDTO)
