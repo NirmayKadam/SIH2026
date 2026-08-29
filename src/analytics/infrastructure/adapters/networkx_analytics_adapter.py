@@ -107,6 +107,49 @@ class NetworkxAnalyticsAdapter(GraphAnalyticsPort):
         except nx.NodeNotFound:
             return PathResult(found=False, entity_ids=[])
 
+    def flag_entity(self, entity_id: EntityId) -> None:
+        query = "MATCH (n:Entity {id: $id}) SET n.is_flagged = true"
+        try:
+            with self._driver.session() as session:
+                session.run(query, id=entity_id.value)
+        except Exception as exc:
+            raise ExternalServiceError(f"Failed to flag entity: {exc}") from exc
+
+    def get_flagged_entities(self) -> list[EntityId]:
+        query = "MATCH (n:Entity {is_flagged: true}) RETURN n.id AS id"
+        flagged = []
+        try:
+            with self._driver.session() as session:
+                for record in session.run(query):
+                    flagged.append(EntityId(record["id"]))
+        except Exception as exc:
+            raise ExternalServiceError(f"Failed to get flagged entities: {exc}") from exc
+        return flagged
+
+    def shortest_path_to_flagged(self, source: EntityId) -> PathResult:
+        flagged_entities = self.get_flagged_entities()
+        if not flagged_entities:
+            return PathResult(found=False, entity_ids=[])
+            
+        graph = self._load_graph()
+        if source.value not in graph:
+            return PathResult(found=False, entity_ids=[])
+
+        best_path = None
+        for target in flagged_entities:
+            if target.value not in graph:
+                continue
+            try:
+                path = nx.shortest_path(graph, source=source.value, target=target.value)
+                if best_path is None or len(path) < len(best_path):
+                    best_path = path
+            except nx.NetworkXNoPath:
+                continue
+                
+        if best_path:
+            return PathResult(found=True, entity_ids=[EntityId(n) for n in best_path])
+        return PathResult(found=False, entity_ids=[])
+
     def detect_suspicious_patterns(self) -> list[SuspiciousPattern]:
         """Run all anomaly detection algorithms against the live graph.
 
