@@ -7,12 +7,15 @@
     "build": "vite build"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
     "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.3",
     "vis-network": "^9.1.9"
   },
   "devDependencies": {
-    "vite": "^5.4.0",
-    "@vitejs/plugin-react": "^4.3.1"
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
   }
 }

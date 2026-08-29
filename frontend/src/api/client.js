@@ -62,3 +62,12 @@ export async function getSuspiciousPatterns() {
   if (!res.ok) throw new Error(`Failed to fetch suspicious patterns: ${res.status}`);
   return res.json();
 }
+
+export async function getShortestPath(sourceId, targetId) {
+  const res = await fetch(`${BASE_URL}/api/analytics/shortest-path?source=${encodeURIComponent(sourceId)}&target=${encodeURIComponent(targetId)}`);
+  if (!res.ok) {
+    if (res.status === 404) return null; // No path found
+    throw new Error(`Failed to fetch shortest path: ${res.status}`);
+  }
+  return res.json();
+}

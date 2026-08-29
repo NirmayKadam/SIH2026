@@ -12,9 +12,20 @@ const KIND_COLORS = {
   default: { bg: '#18181b', border: '#a1a1aa', highlight: '#e4e4e7', shadow: 'rgba(161, 161, 170, 0.3)', label: 'Unknown', icon: '❓' }
 };
 
+const COMMUNITY_PALETTE = [
+  { bg: '#312e81', border: '#6366f1' }, // Indigo
+  { bg: '#064e3b', border: '#10b981' }, // Emerald
+  { bg: '#701a75', border: '#d946ef' }, // Fuchsia
+  { bg: '#7c2d12', border: '#f97316' }, // Orange
+  { bg: '#14532d', border: '#22c55e' }, // Green
+  { bg: '#1e3a8a', border: '#3b82f6' }, // Blue
+  { bg: '#4c1d95', border: '#8b5cf6' }, // Violet
+  { bg: '#831843', border: '#f43f5e' }, // Rose
+];
+
 export { KIND_COLORS };
 
-const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selectedEntityId, visibleKinds }, ref) {
+const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selectedEntityId, visibleKinds, physicsEnabled = true, communityMap = new Map() }, ref) {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
@@ -31,42 +42,111 @@ const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selecte
         console.error('Failed to export graph to PNG:', err);
       }
       return null;
+    },
+    fitToScreen() {
+      if (networkRef.current) {
+        networkRef.current.fit({ animation: { duration: 500, easingFunction: 'easeInOutQuad' } });
+      }
     }
   }), []);
 
+  // Merge same_as nodes
+  const processedData = useMemo(() => {
+    if (!data || !data.nodes) return { nodes: [], edges: [] };
+    
+    const parent = new Map();
+    const find = (i) => {
+      if (!parent.has(i)) parent.set(i, i);
+      if (parent.get(i) === i) return i;
+      const p = find(parent.get(i));
+      parent.set(i, p);
+      return p;
+    };
+    const union = (i, j) => {
+      const rootI = find(i);
+      const rootJ = find(j);
+      if (rootI !== rootJ) parent.set(rootI, rootJ);
+    };
+
+    (data.edges || []).forEach(e => {
+      if (e.kind === 'same_as') union(e.source, e.target);
+    });
+
+    const aliasMap = new Map();
+    const aliasCounts = new Map();
+    (data.nodes || []).forEach(n => {
+      const root = find(n.id);
+      aliasMap.set(n.id, root);
+      if (n.id !== root) {
+        aliasCounts.set(root, (aliasCounts.get(root) || 0) + 1);
+      }
+    });
+
+    const newNodes = (data.nodes || []).filter(n => n.id === aliasMap.get(n.id)).map(n => {
+      const aliases = aliasCounts.get(n.id) || 0;
+      return { ...n, name: aliases > 0 ? `${n.name} (+${aliases})` : n.name };
+    });
+
+    const newEdges = [];
+    const edgeSeen = new Set();
+    (data.edges || []).forEach(e => {
+      if (e.kind === 'same_as') return;
+      const source = aliasMap.get(e.source) || e.source;
+      const target = aliasMap.get(e.target) || e.target;
+      if (source === target) return; // drop self-loops from merge
+      
+      const key = `${source}-${target}-${e.kind}`;
+      if (!edgeSeen.has(key)) {
+        edgeSeen.add(key);
+        newEdges.push({ ...e, source, target });
+      }
+    });
+
+    return { nodes: newNodes, edges: newEdges };
+  }, [data]);
+
   // Filter nodes by visible kinds
   const filteredData = useMemo(() => {
-    if (!visibleKinds || visibleKinds.length === 0) return data;
+    if (!visibleKinds || visibleKinds.length === 0) return processedData;
 
     const visibleSet = new Set(visibleKinds.map(k => k.toLowerCase()));
-    const filteredNodes = (data.nodes || []).filter(n => {
+    const filteredNodes = (processedData.nodes || []).filter(n => {
       const kind = (n.kind || '').toLowerCase();
       return visibleSet.has(kind) || visibleSet.has('default');
     });
 
     const nodeIds = new Set(filteredNodes.map(n => n.id));
-    const filteredEdges = (data.edges || []).filter(e =>
+    const filteredEdges = (processedData.edges || []).filter(e =>
       nodeIds.has(e.source) && nodeIds.has(e.target)
     );
 
     return { nodes: filteredNodes, edges: filteredEdges };
-  }, [data, visibleKinds]);
+  }, [processedData, visibleKinds]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     const visNodes = (filteredData.nodes || []).map(n => {
       const kind = (n.kind || '').toLowerCase();
-      const style = KIND_COLORS[kind] || KIND_COLORS.default;
+      
+      let style = KIND_COLORS[kind] || KIND_COLORS.default;
+      
+      // Override with community colors if available
+      if (communityMap && communityMap.has(n.id)) {
+        const commIdx = communityMap.get(n.id) % COMMUNITY_PALETTE.length;
+        const commColor = COMMUNITY_PALETTE[commIdx];
+        style = { ...style, bg: commColor.bg, border: commColor.border };
+      }
+
       const isSelected = n.id === selectedEntityId;
 
       return {
         id: n.id,
         label: n.name || n.id,
         group: n.kind,
-        title: `<b>${n.name || n.id}</b><br/>Type: ${n.kind || 'Unknown'}<br/>ID: ${n.id}`,
+        title: `<b>${n.name || n.id}</b><br/>Type: ${n.kind || 'Unknown'}<br/>ID: ${n.id}${communityMap.has(n.id) ? `<br/>Community: ${communityMap.get(n.id)}` : ''}`,
         shape: 'dot',
-        size: isSelected ? 28 : 20,
+        size: isSelected ? 28 : (n.confidence > 0.8 ? 24 : 18),
         font: { 
           color: '#f8fafc', 
           size: 13, 
@@ -79,13 +159,13 @@ const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selecte
           background: style.bg,
           border: isSelected ? '#ffffff' : style.border,
           highlight: { 
-            background: style.highlight, 
+            background: style.highlight || style.border, 
             border: '#ffffff' 
           }
         },
         shadow: {
           enabled: true,
-          color: style.shadow,
+          color: style.shadow || 'rgba(0,0,0,0.5)',
           size: isSelected ? 18 : 8
         }
       };
@@ -120,6 +200,7 @@ const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selecte
         selectionWidth: 2.5
       },
       physics: {
+        enabled: physicsEnabled,
         solver: 'forceAtlas2Based',
         forceAtlas2Based: {
           gravitationalConstant: -100,
@@ -142,15 +223,17 @@ const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selecte
 
     if (networkRef.current) {
       networkRef.current.setData(networkData);
+      networkRef.current.setOptions({ physics: { enabled: physicsEnabled } });
     } else {
       networkRef.current = new Network(containerRef.current, networkData, options);
       networkRef.current.on('click', (params) => {
         if (params.nodes && params.nodes.length > 0) {
+          // Find the original node ID since we might have passed a merged ID
           onNodeClick(params.nodes[0]);
         }
       });
     }
-  }, [filteredData, selectedEntityId, onNodeClick]);
+  }, [filteredData, selectedEntityId, onNodeClick, physicsEnabled]);
 
   // Compute which entity kinds are present in the current data
   const activeKinds = useMemo(() => {
