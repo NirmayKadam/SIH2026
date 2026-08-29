@@ -84,10 +84,10 @@ Maps classified queries to real execution:
 |---|---|---|---|
 | `SHORTEST_PATH` | ✅ | Analytics | `FindShortestPathUseCase` |
 | `TOP_CENTRAL_NODES` | ✅ | Analytics | `ComputeCentralityUseCase` |
-| `NEIGHBORS_WITHIN_HOPS` | ❌ Stub | Graph | `GetEntityNeighborhoodUseCase` |
-| `COMMUNITY_MEMBERS` | ❌ Stub | Analytics | `DetectCommunitiesUseCase` |
-| `ENTITY_SEARCH` | ❌ Stub | Graph | `SearchEntitiesUseCase` |
-| `GRAPH_SUMMARY` | ❌ Stub | Graph | `GetGraphStatsUseCase` |
+| `NEIGHBORS_WITHIN_HOPS` | ✅ | Graph | `GetEntityNeighborhoodUseCase` |
+| `COMMUNITY_MEMBERS` | ✅ | Analytics | `DetectCommunitiesUseCase` |
+| `ENTITY_SEARCH` | ✅ | Graph | `SearchEntitiesUseCase` |
+| `GRAPH_SUMMARY` | ✅ | Graph | `GetGraphStatsUseCase` |
 
 ### Parameter Schemas by Intent
 
@@ -107,28 +107,34 @@ Maps classified queries to real execution:
 - In `TemplateQueryExecutorAdapter` (adapter layer only):
   - `analytics.application.use_cases.compute_centrality.ComputeCentralityUseCase`
   - `analytics.application.use_cases.find_shortest_path.FindShortestPathUseCase`
+  - `analytics.application.use_cases.detect_communities.DetectCommunitiesUseCase`
+  - `graph.application.use_cases.get_entity_neighborhood.GetEntityNeighborhoodUseCase`
+  - `graph.application.use_cases.search_entities.SearchEntitiesUseCase`
+  - `graph.application.use_cases.get_graph_stats.GetGraphStatsUseCase`
   - `analytics.domain.entities.CentralityType`
 - **Nothing from ingestion or extraction**
 
-## Known Gap
+## Name→EntityId Resolution
 
-`TemplateQueryExecutorAdapter` currently uses `EntityId(source_name)` which
-treats the entity name as the ID. Real implementation needs a name→EntityId
-lookup via `GraphRepositoryPort.search_nodes()`.
+`TemplateQueryExecutorAdapter.resolve_entity_id(name)` searches via
+`SearchEntitiesUseCase.execute(name, limit=5)` and returns top match.
+Logs info when multiple matches found. Raises `ValidationError` if zero matches.
+
+Parameter validation runs before execution via `validate_parameters()` — raises
+`ValidationError` for missing/empty required params per intent.
 
 ## Roadmap — Query Tasks (Scoped to This Domain)
 
 ### Complete TemplateQueryExecutor Intents
 
-4 of 6 intents are still stubbed. Wire them to real use cases:
+All 6 intents wired to real use cases:
 
-- [ ] `NEIGHBORS_WITHIN_HOPS` → `GetEntityNeighborhoodUseCase` (Graph context)
-- [ ] `COMMUNITY_MEMBERS` → `DetectCommunitiesUseCase` (Analytics context)
-- [ ] `ENTITY_SEARCH` → `SearchEntitiesUseCase` (Graph context)
-- [ ] `GRAPH_SUMMARY` → `GetGraphStatsUseCase` (Graph context)
+- [x] `NEIGHBORS_WITHIN_HOPS` → `GetEntityNeighborhoodUseCase` (Graph context)
+- [x] `COMMUNITY_MEMBERS` → `DetectCommunitiesUseCase` (Analytics context)
+- [x] `ENTITY_SEARCH` → `SearchEntitiesUseCase` (Graph context)
+- [x] `GRAPH_SUMMARY` → `GetGraphStatsUseCase` (Graph context)
 
 ### Fix Name→EntityId Lookup
 
-- [ ] When `GeminiIntentClassifier` returns entity names as parameters, resolve them to real `EntityId` via `GraphRepositoryPort.search_nodes()` before executing the query
-- [ ] Handle ambiguous matches (multiple entities with similar names) — return top match or ask for clarification
-
+- [x] When `GeminiIntentClassifier` returns entity names as parameters, resolve them to real `EntityId` via `SearchEntitiesUseCase` before executing the query
+- [x] Handle ambiguous matches (multiple entities with similar names) — returns top match, logs info about alternatives
