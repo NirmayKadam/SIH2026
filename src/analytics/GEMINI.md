@@ -109,11 +109,11 @@ This avoids pulling full, heavy `GraphNode` objects over the wire just to discar
 
 ## Roadmap — Analytics Tasks (Scoped to This Domain)
 
-### Shortest-Path-to-Flagged-Entity
+### Shortest-Path-to-Flagged-Entity — Done ✅
 
-- [ ] Allow marking entities as "flagged/suspicious" (new field or separate store)
-- [ ] New use case: compute shortest paths from any entity to nearest flagged one
-- [ ] Expose via REST endpoint
+- [x] Allow marking entities as "flagged/suspicious" (new field or separate store)
+- [x] New use case: compute shortest paths from any entity to nearest flagged one
+- [x] Expose via REST endpoint
 
 ### Temporal Analysis (Stretch)
 
