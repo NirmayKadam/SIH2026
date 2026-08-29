@@ -31,11 +31,17 @@ We have successfully built and proved out the core end-to-end pipeline (Ingestio
 
 ### Agentic Querying & Frontend
 - **Gemini Intent Classification**: The system successfully translates Natural Language queries (e.g., *"Who are the intermediaries for Infinity (B.V.I) Group Ltd.?"*) into a bounded set of safe Cypher intents (e.g., `neighbors_within_hops`).
+<<<<<<< HEAD
 - **React SPA**: The frontend successfully displays the graph using `vis-network`, renders the analytics and threat panels, and handles the NL query box.
 - **Enhanced UI/UX**: Overhauled the frontend with a unified full-width navigation header, collapsible tool panels, a clean Glassmorphism aesthetic, and dynamic Day/Night theme toggling.
 - **Threat Detection Dashboard**: Added a dedicated `⚠ Threats` panel to automatically surface detected anomalies, rank them by risk score, and allow 1-click highlighting of involved entities in the graph.
 - **Metadata Viewer**: Built an integrated side panel to view all dynamically extracted graph properties (jurisdiction, status, etc.) when clicking on any entity node.
 - **Dynamic Legend**: Added a floating map legend that automatically updates to display only the entity types currently active in the view.
+=======
+- **React SPA**: The frontend successfully displays the graph using `vis-network`, renders the analytics panel, and handles the NL query box.
+- **Enhanced UI/UX**: Overhauled the frontend with a unified full-width navigation header, collapsible tool panels, a clean Glassmorphism aesthetic, and dynamic Day/Night theme toggling.
+- **Metadata Viewer**: Built an integrated side panel to view all dynamically extracted graph properties (jurisdiction, status, etc.) when clicking on any entity node.
+>>>>>>> cfdc12096b17c8b75c9fe0dbf035e21b28d826a8
 
 ---
 
