@@ -54,3 +54,16 @@ ARCHITECTURE.md critic note #5).
 2. Add to `domain/value_objects.py`
 3. Update this GEMINI.md
 4. Update the project root GEMINI.md
+
+## Roadmap — Shared Kernel Tasks
+
+### Domain Model Expansion — Done ✅
+
+- [x] Added `EntityKind.VEHICLE` and `EntityKind.PHONE_NUMBER`
+- [x] Added `RelationshipKind.OWNS_VEHICLE`, `RelationshipKind.CALLED`, `RelationshipKind.FUNDED_BY`
+- [x] Updated `docs/domain-model.md`
+
+### Pending (if new data modalities added)
+
+- [ ] Add `SourceType.CDR` and `SourceType.FINANCIAL_TRANSACTION` — only when Teammate E builds CDR/financial parsers
+
