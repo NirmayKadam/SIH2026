@@ -106,3 +106,25 @@ This avoids pulling full, heavy `GraphNode` objects over the wire just to discar
 
 - **Query context** uses `ComputeCentralityUseCase` and `FindShortestPathUseCase`
   via `TemplateQueryExecutorAdapter` (wired through DI, not direct import)
+
+## Roadmap — Analytics Tasks (Scoped to This Domain)
+
+### Shortest-Path-to-Flagged-Entity
+
+- [ ] Allow marking entities as "flagged/suspicious" (new field or separate store)
+- [ ] New use case: compute shortest paths from any entity to nearest flagged one
+- [ ] Expose via REST endpoint
+
+### Temporal Analysis (Stretch)
+
+- [ ] Add `timestamp` field awareness to relationships (if present in source data)
+- [ ] New endpoint: `/api/analytics/timeline?entity_id=X` → activity over time
+- [ ] Filter graph edges by date range
+
+### Suspicious Patterns — Done ✅
+
+- [x] Shell company clustering (star topologies with high leaf ratios)
+- [x] High-betweenness facilitators (brokers between clusters)
+- [x] Circular flow detection (directed money loops)
+- [x] `GET /api/analytics/suspicious-patterns` endpoint
+

@@ -83,3 +83,14 @@ docker compose up worker
 # or standalone
 rq worker extraction_jobs --url redis://localhost:6379/0
 ```
+
+## Roadmap — Workers Tasks (Scoped to This Domain)
+
+### Fix Known Issues (Owner: Teammate F)
+
+- [ ] **DI duplication:** Worker creates its own adapters. Refactor to use shared container builder from `di_container.py`
+- [ ] **Job status updates:** Worker doesn't update `IngestionJob.status` back to Redis — `get_status()` won't reflect progress. Add status transitions: `PARSING → EXTRACTING → PERSISTING → DONE / FAILED`
+- [ ] **Error handling:** Catch errors from `parser.parse()` and `extract_use_case.execute()`, update job status to `FAILED`, store error message
+- [ ] **Connection leak:** `graph_repo.close()` not in `finally` block. Fix.
+- [ ] **Resolution candidates dropped:** Worker receives `_candidates` but ignores them. Implement real merge decision path
+

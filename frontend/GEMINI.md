@@ -99,3 +99,85 @@ npm run build   # production bundle
 - **Confidence scores displayed as-is.** Never round to make them look "cleaner".
 - **Error states must be visible.** If an API call fails, show the error — don't
   silently show an empty graph.
+
+## Roadmap — Frontend Tasks (Scoped to This Domain)
+
+### New Dependencies to Add
+
+| Package | Version | Purpose |
+|---|---|---|
+| `react-router-dom` | `^6` | Multi-page routing (Dashboard / Graph Explorer) |
+| `chart.js` | `^4` | Canvas-based dashboard charts |
+| `react-chartjs-2` | `^5` | React wrapper for Chart.js |
+
+### Layout Redesign — Command Center Sidebar
+
+**Current:** Floating glass panels over fullscreen graph. Overlap issues.
+**Target:** Fixed left sidebar (64px icons, 240px expanded) + center canvas + right detail drawer.
+
+- [ ] Add `react-router-dom` — routes: `/` (Dashboard), `/graph` (Graph Explorer)
+- [ ] Restructure `App.jsx` — sidebar nav + `<Outlet>` for page content
+- [ ] Left sidebar: icon nav (📊 Dashboard, 🕸️ Graph, 📁 Ingest, ⚠ Threats, 🔍 Path, 👥 Communities)
+- [ ] Right drawer: context-dependent (EntityDetail / QueryResult / PathView)
+- [ ] CSS Grid layout in `index.css`
+
+### New Components
+
+| Component | File | Purpose |
+|---|---|---|
+| `DashboardPage` | `pages/DashboardPage.jsx` | Stat cards, entity distribution donut (Chart.js), top influencers, threat feed, recent ingestion jobs |
+| `GraphToolbar` | `components/GraphToolbar.jsx` | Layout toggle (force/hierarchical/radial), entity kind filter checkboxes, zoom controls, PNG export, fullscreen |
+| `PathFinderPanel` | `components/PathFinderPanel.jsx` | Two entity autocomplete inputs → call `/api/analytics/shortest-path` → animate path on graph |
+| `CommunityPanel` | `components/CommunityPanel.jsx` | List communities sorted by size, click → highlight members on graph, bar chart of sizes |
+| `Toast` | `components/Toast.jsx` | Lightweight toast notifications (success/error/warning), replaces `console.error` |
+
+### Component Upgrades
+
+#### GraphViewer.jsx
+- [ ] Merge `same_as` nodes visually — collapse duplicates into single node with alias count badge (fixes "10× DEVIDAS" problem)
+- [ ] Community-based node coloring when community data loaded
+- [ ] Node size scaled by centrality score
+- [ ] Animated path highlight (pulse edges in neon green for shortest path results)
+- [ ] Stop physics on user click for cleaner exploration
+
+#### EntityDetail.jsx
+- [ ] Add direct connections list (grouped by relationship type)
+- [ ] "Find path FROM here" quick action
+- [ ] Copy entity ID button
+- [ ] Centrality rank badge
+
+#### QueryBox.jsx
+- [ ] Move NL result display to right panel (not inline below search)
+- [ ] Structured result rendering: path → timeline, entities → cards
+- [ ] Query history (last 10, localStorage)
+
+#### IngestionPanel.jsx
+- [ ] File upload via drag-and-drop (connects to backend `POST /api/ingestion/upload`)
+- [ ] Job progress polling (`GET /api/ingestion/documents/{job_id}`)
+- [ ] Status timeline: queued → extracting → building graph → done
+- [ ] Recent ingestion history list
+
+### Polish (from original Phase 4 roadmap)
+
+- [ ] Loading skeleton loaders for all async panels
+- [ ] Error toasts — replace all `console.error` with visible toast notifications
+- [ ] Graph filtering controls by `EntityKind` (show/hide person, org, location)
+- [ ] Export graph snapshot as PNG
+- [ ] Responsive layout for 1280×720 and 1920×1080 projector resolutions
+- [ ] Keyboard shortcuts: `Ctrl+K` → search, `Escape` → close panels, `F` → fit graph
+
+### API Client Additions (`src/api/client.js`)
+
+```javascript
+// New functions needed:
+export async function uploadFile(file, sourceType) { ... }     // POST /api/ingestion/upload (FormData)
+export async function getShortestPath(source, target) { ... }  // GET /api/analytics/shortest-path
+export async function getJobStatus(jobId) { ... }              // GET /api/ingestion/documents/{job_id}
+```
+
+### Definition of Done
+
+A non-technical judge can open the app, see a dashboard overview, explore the graph,
+find shortest path between suspects, ask a question in English, and understand the
+results — all without developer guidance.
+
