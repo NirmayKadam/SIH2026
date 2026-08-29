@@ -85,3 +85,32 @@ class IngestionJobQueuePort(ABC):
 | ICIJ Offshore Leaks | `IcijCsvParserAdapter` | `data/raw/icij_offshore_leaks/` |
 | Enron Emails | `EnronEmailParserAdapter` | `data/raw/enron_emails/` |
 | Court Judgments | `CourtJudgmentParserAdapter` | `data/raw/court_judgments/` |
+
+## Roadmap — Ingestion Tasks (Scoped to This Domain)
+
+### File Upload Endpoint (HIGH PRIORITY — Owner: Nirmay)
+
+Currently ingestion only accepts server-side path. Need actual file upload for demo.
+
+- [ ] New endpoint: `POST /api/ingestion/upload` — accepts `multipart/form-data`
+- [ ] Validate file type (`.csv`, `.mbox`, `.pdf`)
+- [ ] Save uploaded file to `data/uploads/<uuid>_<filename>`
+- [ ] Trigger same `IngestDocumentUseCase` pipeline as path-based endpoint
+- [ ] Return `{ job_id, filename, status: "queued" }`
+- [ ] Add `data/uploads/` to `.gitignore`
+
+### Battle-Test Unstructured Extraction (Owner: Teammate B)
+
+- [ ] Run `load_enron_dataset.py` inside Docker. Verify `EnronEmailParserAdapter` → `GeminiEntityExtractionAdapter` → Neo4j pipeline end-to-end
+- [ ] Run `load_court_judgments.py`. Verify `CourtJudgmentParserAdapter` → LLM extraction produces real entities
+- [ ] Tune Gemini extraction prompts for legal language and email threading
+- [ ] Test with at least 5 real documents from each source
+
+**Definition of Done:** Search for a person's name in UI and see connections from **multiple sources** (ICIJ + Enron or ICIJ + Court Judgment) in graph.
+
+### New Data Modalities (Owner: Teammate E — Stretch)
+
+- [ ] CDR parser: Find real anonymized CDR dataset. Build `CdrParserAdapter`
+- [ ] Financial transaction parser: public financial dataset
+- [ ] Add `SourceType.CDR` and `SourceType.FINANCIAL_TRANSACTION` to `shared_kernel`
+

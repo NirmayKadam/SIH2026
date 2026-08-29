@@ -107,3 +107,19 @@ class IdentityResolutionPort(ABC):
 The worker (`src/workers/extraction_worker.py`) calls this use case's `execute()`
 and passes the results to `graph/application/use_cases/persist_extraction_result.py`.
 Extraction does NOT write to the graph — that's Graph context's responsibility.
+
+## Roadmap — Extraction Tasks (Scoped to This Domain)
+
+### Battle-Test LLM Extraction (Owner: Teammate B)
+
+- [ ] Validate `GeminiEntityExtractionAdapter` against real Enron emails (at least 5 docs)
+- [ ] Validate against real Indian court judgment PDFs (at least 5 docs)
+- [ ] Tune extraction prompt for legal language patterns (case numbers, judge names, statutes)
+- [ ] Tune extraction prompt for email threading patterns (from/to/cc, forwarded chains)
+- [ ] Validate `RapidFuzzIdentityResolverAdapter` cross-source merging (same person in ICIJ + court judgment)
+
+### Known Gap
+
+Resolution candidates returned by `ExtractEntitiesFromDocumentUseCase` are currently
+dropped by the worker. Need a real merge decision path — don't auto-merge blindly.
+

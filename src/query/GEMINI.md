@@ -115,3 +115,20 @@ Maps classified queries to real execution:
 `TemplateQueryExecutorAdapter` currently uses `EntityId(source_name)` which
 treats the entity name as the ID. Real implementation needs a name→EntityId
 lookup via `GraphRepositoryPort.search_nodes()`.
+
+## Roadmap — Query Tasks (Scoped to This Domain)
+
+### Complete TemplateQueryExecutor Intents
+
+4 of 6 intents are still stubbed. Wire them to real use cases:
+
+- [ ] `NEIGHBORS_WITHIN_HOPS` → `GetEntityNeighborhoodUseCase` (Graph context)
+- [ ] `COMMUNITY_MEMBERS` → `DetectCommunitiesUseCase` (Analytics context)
+- [ ] `ENTITY_SEARCH` → `SearchEntitiesUseCase` (Graph context)
+- [ ] `GRAPH_SUMMARY` → `GetGraphStatsUseCase` (Graph context)
+
+### Fix Name→EntityId Lookup
+
+- [ ] When `GeminiIntentClassifier` returns entity names as parameters, resolve them to real `EntityId` via `GraphRepositoryPort.search_nodes()` before executing the query
+- [ ] Handle ambiguous matches (multiple entities with similar names) — return top match or ask for clarification
+

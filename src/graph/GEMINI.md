@@ -186,3 +186,18 @@ These are **not implemented now** — documented here for production roadmap:
 - **Implementation**: FastAPI middleware using `slowapi` or Redis-backed token
   bucket. Apply per-endpoint limits (e.g., 60 req/min on search, 10 req/min on
   NL query which calls LLM).
+
+## Roadmap — Graph Tasks (Scoped to This Domain)
+
+### Current Status: Feature-Complete for Hackathon ✅
+
+All CRUD, neighborhood, search, stats, and persistence use cases are implemented
+and tested with real ICIJ data (~4K nodes). Rate limiting is done (slowapi).
+
+### Integration Tests (Owner: Teammate F)
+
+- [ ] Integration test: full ingestion → extraction → persist pipeline in test container
+- [ ] Assert nodes/edges exist in Neo4j after pipeline run
+- [ ] API contract tests: hit every graph REST endpoint, assert response shapes
+- [ ] Load test: verify vis-network can render 1000+ nodes without browser crash
+
