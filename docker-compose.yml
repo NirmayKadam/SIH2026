@@ -40,6 +40,7 @@ services:
       - ./src:/app/src
       - ./data:/app/data
       - ./scripts:/app/scripts
+      - ./tests:/app/tests
 
   worker:
     build: .
@@ -54,6 +55,7 @@ services:
       - ./src:/app/src
       - ./data:/app/data
       - ./scripts:/app/scripts
+      - ./tests:/app/tests
 
 volumes:
   neo4j_data:
