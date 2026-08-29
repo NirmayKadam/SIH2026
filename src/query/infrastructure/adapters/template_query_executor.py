@@ -2,6 +2,8 @@
 Maps a ClassifiedQuery to real calls into the Analytics/Graph ports (wired in by the
 composition root) and formats a genuine answer.
 """
+import logging
+
 from query.application.ports.query_executor_port import QueryExecutorPort
 from query.domain.entities import ClassifiedQuery, QueryAnswer, QueryIntent
 from analytics.application.use_cases.compute_centrality import ComputeCentralityUseCase
@@ -14,6 +16,17 @@ from analytics.domain.entities import CentralityType
 from shared_kernel.domain.value_objects import EntityId
 from shared_kernel.domain.errors import ValidationError
 
+logger = logging.getLogger(__name__)
+
+REQUIRED_PARAMS = {
+    QueryIntent.SHORTEST_PATH: ["source_name", "target_name"],
+    QueryIntent.TOP_CENTRAL_NODES: [],
+    QueryIntent.NEIGHBORS_WITHIN_HOPS: ["entity_name"],
+    QueryIntent.COMMUNITY_MEMBERS: ["entity_name"],
+    QueryIntent.ENTITY_SEARCH: ["name_query"],
+    QueryIntent.GRAPH_SUMMARY: [],
+}
+
 
 class TemplateQueryExecutorAdapter(QueryExecutorPort):
     def __init__(
@@ -25,25 +38,44 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
         search_entities_use_case: SearchEntitiesUseCase,
         get_graph_stats_use_case: GetGraphStatsUseCase,
     ) -> None:
-        self._centrality_use_case = centrality_use_case
-        self._shortest_path_use_case = shortest_path_use_case
-        self._detect_communities_use_case = detect_communities_use_case
-        self._get_neighborhood_use_case = get_neighborhood_use_case
-        self._search_entities_use_case = search_entities_use_case
-        self._get_graph_stats_use_case = get_graph_stats_use_case
+        self.centrality_use_case = centrality_use_case
+        self.shortest_path_use_case = shortest_path_use_case
+        self.detect_communities_use_case = detect_communities_use_case
+        self.get_neighborhood_use_case = get_neighborhood_use_case
+        self.search_entities_use_case = search_entities_use_case
+        self.get_graph_stats_use_case = get_graph_stats_use_case
 
-    def _resolve_entity_id(self, name: str) -> EntityId:
+    def validate_parameters(self, query: ClassifiedQuery) -> None:
+        """Raise ValidationError if required parameters for the intent are missing or empty."""
+        required = REQUIRED_PARAMS.get(query.intent, [])
+        for param in required:
+            value = query.parameters.get(param)
+            if not value or (isinstance(value, str) and not value.strip()):
+                raise ValidationError(
+                    f"Missing required parameter '{param}' for intent {query.intent.value}"
+                )
+
+    def resolve_entity_id(self, name: str) -> EntityId:
         """Looks up the entity by name. Takes the top match. Raises ValidationError if not found."""
-        results = self._search_entities_use_case.execute(name, limit=1)
+        if not name or not name.strip():
+            raise ValidationError("Entity name cannot be empty")
+        results = self.search_entities_use_case.execute(name, limit=5)
         if not results:
             raise ValidationError(f"Could not find any entity matching name: {name}")
+        if len(results) > 1:
+            logger.info(
+                "Multiple matches for '%s': returning top match '%s' (out of %d)",
+                name, results[0].name, len(results),
+            )
         return results[0].entity_id
 
     def execute(self, query: ClassifiedQuery) -> QueryAnswer:
+        self.validate_parameters(query)
+
         if query.intent == QueryIntent.SHORTEST_PATH:
-            source = self._resolve_entity_id(query.parameters.get("source_name", ""))
-            target = self._resolve_entity_id(query.parameters.get("target_name", ""))
-            result = self._shortest_path_use_case.execute(source, target)
+            source = self.resolve_entity_id(query.parameters["source_name"])
+            target = self.resolve_entity_id(query.parameters["target_name"])
+            result = self.shortest_path_use_case.execute(source, target)
             explanation = (
                 f"Path found through {len(result.entity_ids)} entities"
                 if result.found else "No connecting path found in the current graph"
@@ -57,18 +89,18 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
         if query.intent == QueryIntent.TOP_CENTRAL_NODES:
             centrality_type = CentralityType(query.parameters.get("centrality_type", "degree"))
             limit = int(query.parameters.get("limit", 5))
-            scores = self._centrality_use_case.execute(centrality_type)
+            scores = self.centrality_use_case.execute(centrality_type)
             top = sorted(scores, key=lambda s: s.score, reverse=True)[:limit]
             return QueryAnswer(
                 intent=query.intent,
                 result={"top_nodes": [{"id": s.entity_id.value, "score": s.score} for s in top]},
                 explanation=f"Top {len(top)} nodes by {centrality_type.value} centrality",
             )
-            
+
         if query.intent == QueryIntent.NEIGHBORS_WITHIN_HOPS:
-            entity_id = self._resolve_entity_id(query.parameters.get("entity_name", ""))
+            entity_id = self.resolve_entity_id(query.parameters["entity_name"])
             hops = int(query.parameters.get("hops", 1))
-            neighborhood = self._get_neighborhood_use_case.execute(entity_id, hops)
+            neighborhood = self.get_neighborhood_use_case.execute(entity_id, hops)
             return QueryAnswer(
                 intent=query.intent,
                 result={
@@ -80,8 +112,8 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
             )
 
         if query.intent == QueryIntent.COMMUNITY_MEMBERS:
-            entity_id = self._resolve_entity_id(query.parameters.get("entity_name", ""))
-            communities = self._detect_communities_use_case.execute()
+            entity_id = self.resolve_entity_id(query.parameters["entity_name"])
+            communities = self.detect_communities_use_case.execute()
             target_community = next((c for c in communities if entity_id in c.member_entity_ids), None)
             if not target_community:
                 return QueryAnswer(
@@ -89,7 +121,7 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
                     result={"members": []},
                     explanation="Entity does not belong to any detected community."
                 )
-            
+
             members_str = [e.value for e in target_community.member_entity_ids]
             return QueryAnswer(
                 intent=query.intent,
@@ -98,8 +130,8 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
             )
 
         if query.intent == QueryIntent.ENTITY_SEARCH:
-            name_query = query.parameters.get("name_query", "")
-            results = self._search_entities_use_case.execute(name_query, limit=20)
+            name_query = query.parameters["name_query"]
+            results = self.search_entities_use_case.execute(name_query, limit=20)
             return QueryAnswer(
                 intent=query.intent,
                 result={"matches": [{"id": n.entity_id.value, "name": n.name, "kind": n.kind.value} for n in results]},
@@ -107,11 +139,14 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
             )
 
         if query.intent == QueryIntent.GRAPH_SUMMARY:
-            stats = self._get_graph_stats_use_case.execute()
+            stats = self.get_graph_stats_use_case.execute()
+            total_nodes = stats.get("total_nodes", "unknown")
+            total_edges = stats.get("total_edges", "unknown")
             return QueryAnswer(
                 intent=query.intent,
                 result=stats,
-                explanation=f"Graph contains {stats.get('total_nodes')} nodes and {stats.get('total_edges')} edges."
+                explanation=f"Graph contains {total_nodes} nodes and {total_edges} edges."
             )
 
         raise NotImplementedError(f"Intent {query.intent} not supported.")
+

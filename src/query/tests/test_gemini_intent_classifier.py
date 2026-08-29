@@ -32,3 +32,28 @@ def test_classify_intent_shortest_path():
     vals = str(result.parameters.values()).lower()
     assert "alice" in vals
     assert "bob" in vals
+
+
+@pytest.mark.skipif(
+    not os.environ.get("GEMINI_API_KEY"), reason="GEMINI_API_KEY required"
+)
+def test_classify_intent_entity_search():
+    classifier = GeminiIntentClassifierAdapter()
+    result = classifier.classify("find all entities named Ravi")
+
+    assert result.intent == QueryIntent.ENTITY_SEARCH
+    assert "name_query" in result.parameters
+    assert "ravi" in str(result.parameters["name_query"]).lower()
+    assert 0.0 <= result.confidence <= 1.0
+
+
+@pytest.mark.skipif(
+    not os.environ.get("GEMINI_API_KEY"), reason="GEMINI_API_KEY required"
+)
+def test_classify_intent_graph_summary():
+    classifier = GeminiIntentClassifierAdapter()
+    result = classifier.classify("give me an overview of the entire graph")
+
+    assert result.intent == QueryIntent.GRAPH_SUMMARY
+    assert 0.0 <= result.confidence <= 1.0
+

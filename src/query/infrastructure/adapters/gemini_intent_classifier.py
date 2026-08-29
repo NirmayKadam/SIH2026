@@ -24,6 +24,8 @@ Intents:
 - top_central_nodes: params {{"centrality_type": "degree"|"betweenness"|"pagerank", "limit": int}}
 - neighbors_within_hops: params {{"entity_name": str, "hops": int}}
 - community_members: params {{"entity_name": str}}
+- entity_search: params {{"name_query": str}}
+- graph_summary: params {{}}
 
 Response schema: {{"intent": str, "parameters": {{...}}, "confidence": float}}
 confidence is your genuine classification confidence, not a placeholder.
