@@ -16,8 +16,10 @@ from extraction.application.use_cases.extract_entities_from_document import (
 )
 from extraction.domain.entities import DocumentInput, ExtractedRelationship
 from graph.application.use_cases.persist_extraction_result import PersistExtractionResultUseCase
-from shared_kernel.domain.value_objects import SourceType, SourceProvenance, RelationshipKind, Confidence
+from shared_kernel.domain.value_objects import SourceType, SourceProvenance, RelationshipKind, Confidence, EvidenceHash
+from shared_kernel.domain.errors import DuplicateEvidenceError
 from datetime import datetime, timezone
+import hashlib
 from rq import get_current_job
 from api_gateway.di_container import build_container
 
@@ -44,6 +46,23 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
     
     try:
         source_type = SourceType(source_type_value)
+        
+        sha256_hash = hashlib.sha256()
+        with open(source_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(chunk)
+        file_hash_str = sha256_hash.hexdigest()
+        
+        try:
+            evidence_record = container.store_evidence_hash_use_case.execute(
+                document_id=source_path,
+                hash_val_str=file_hash_str,
+                metadata={"source_type": source_type_value}
+            )
+        except DuplicateEvidenceError as e:
+            update_status(f"failed: {e}")
+            raise
+            
         parser = _PARSERS[source_type]()
         documents = parser.parse(source_path)
 
@@ -54,6 +73,7 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
                 source_type=document.source_type,
                 raw_text=document.raw_text,
                 source_path=document.source_path,
+                evidence_hash=evidence_record.evidence_hash,
             )
             entities, relationships, _candidates = extract_use_case.execute(doc_input)
             
@@ -63,6 +83,7 @@ def process_ingestion_job(job_id: str, source_type_value: str, source_path: str)
                 source_type=document.source_type,
                 source_document_id=document.document_id,
                 ingested_at=datetime.now(timezone.utc),
+                evidence_hash=EvidenceHash(evidence_record.evidence_hash),
             )
             for candidate in _candidates:
                 if candidate.similarity_score > 0.85:

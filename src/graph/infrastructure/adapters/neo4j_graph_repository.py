@@ -13,7 +13,7 @@ from neo4j.exceptions import Neo4jError
 from graph.application.ports.graph_repository_port import GraphRepositoryPort
 from graph.domain.entities import GraphNode, GraphEdge, Neighborhood
 from shared_kernel.domain.value_objects import (
-    EntityId, EntityKind, RelationshipKind, SourceProvenance, SourceType,
+    EntityId, EntityKind, RelationshipKind, SourceProvenance, SourceType, EvidenceHash,
 )
 from shared_kernel.domain.errors import (
     ExternalServiceError, NotFoundError, ValidationError,
@@ -36,6 +36,9 @@ def serialize_provenances(provenances: list[SourceProvenance]) -> str:
             "source_type": p.source_type.value,
             "source_document_id": p.source_document_id,
             "ingested_at": p.ingested_at.isoformat(),
+            "evidence_hash": p.evidence_hash.value if p.evidence_hash else None,
+            "valid_from": p.valid_from.isoformat() if p.valid_from else None,
+            "valid_to": p.valid_to.isoformat() if p.valid_to else None,
         }
         for p in provenances
     ])
@@ -51,6 +54,9 @@ def deserialize_provenances(json_str: str | None) -> list[SourceProvenance]:
             source_type=SourceType(item["source_type"]),
             source_document_id=item["source_document_id"],
             ingested_at=datetime.fromisoformat(item["ingested_at"]),
+            evidence_hash=EvidenceHash(item["evidence_hash"]) if item.get("evidence_hash") else None,
+            valid_from=datetime.fromisoformat(item["valid_from"]) if item.get("valid_from") else None,
+            valid_to=datetime.fromisoformat(item["valid_to"]) if item.get("valid_to") else None,
         )
         for item in raw_list
     ]
@@ -86,12 +92,18 @@ def record_to_node(record) -> GraphNode:
     node = record["n"]
     props_json = node.get("properties_json")
     properties = json.loads(props_json) if props_json else {}
+    location = node.get("location")
+    geo_point = None
+    if location:
+        # neo4j python driver spatial Point has .x (longitude) and .y (latitude)
+        geo_point = GeoPoint(latitude=location.y, longitude=location.x)
     return GraphNode(
         entity_id=EntityId(node["id"]),
         kind=EntityKind(node["kind"]),
         name=node["name"],
         confidence=node["confidence"],
         provenances=deserialize_provenances(node.get("provenances")),
+        geo_point=geo_point,
         properties=properties,
     )
 
@@ -120,6 +132,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
         SET n.kind = $kind, n.name = $name, n.confidence = $confidence,
             n.provenances = $provenances_json, n.properties_json = $properties_json
         """
+        if node.geo_point:
+            write_query += "\n        SET n.location = point({latitude: $lat, longitude: $lon})"
         try:
             with self.driver.session() as session:
                 result = session.run(read_query, id=node.entity_id.value)
@@ -138,6 +152,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                     confidence=node.confidence,
                     provenances_json=merged_prov,
                     properties_json=merged_props,
+                    lat=node.geo_point.latitude if node.geo_point else None,
+                    lon=node.geo_point.longitude if node.geo_point else None,
                 )
         except Neo4jError as exc:
             raise ExternalServiceError(
@@ -153,7 +169,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
         write_query = """
         MATCH (a:Entity {id: $source_id}), (b:Entity {id: $target_id})
         MERGE (a)-[r:RELATES {kind: $kind}]->(b)
-        SET r.confidence = $confidence, r.provenances = $provenances_json, r.properties_json = $properties_json
+        SET r.confidence = $confidence, r.provenances = $provenances_json, r.properties_json = $properties_json,
+            r.validFrom = $valid_from, r.validTo = $valid_to
         """
         try:
             with self.driver.session() as session:
@@ -178,6 +195,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                     confidence=edge.confidence,
                     provenances_json=merged_prov,
                     properties_json=merged_props,
+                    valid_from=edge.valid_from,
+                    valid_to=edge.valid_to,
                 )
         except Neo4jError as exc:
             raise ExternalServiceError(f"Failed to upsert edge: {exc}") from exc
@@ -261,6 +280,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                         node_id = neo_node["id"]
                         if node_id not in seen_node_ids:
                             seen_node_ids.add(node_id)
+                            loc = neo_node.get("location")
+                            gp = GeoPoint(latitude=loc.y, longitude=loc.x) if loc else None
                             neighbor_nodes.append(GraphNode(
                                 entity_id=EntityId(node_id),
                                 kind=EntityKind(neo_node["kind"]),
@@ -269,6 +290,7 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                                 provenances=deserialize_provenances(
                                     neo_node.get("provenances")
                                 ),
+                                geo_point=gp,
                                 properties=json.loads(neo_node.get("properties_json") or "{}"),
                             ))
 
@@ -287,6 +309,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                                 provenances=deserialize_provenances(
                                     neo_rel.get("provenances")
                                 ),
+                                valid_from=neo_rel.get("validFrom"),
+                                valid_to=neo_rel.get("validTo"),
                                 properties=json.loads(neo_rel.get("properties_json") or "{}"),
                             ))
 
@@ -300,6 +324,87 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
         except Neo4jError as exc:
             raise ExternalServiceError(
                 f"Failed to get neighborhood for {entity_id.value}: {exc}"
+            ) from exc
+
+    def get_temporal_neighborhood(self, entity_id: EntityId, start_date: str, end_date: str) -> Neighborhood:
+        """Retrieve 1-hop neighborhood filtered by temporal validity. Raises NotFoundError if
+        center node doesn't exist.
+        SECURITY: Cypher injection safe."""
+        center = self.get_node(entity_id)
+
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            end_dt = datetime.fromisoformat(end_date)
+        except ValueError as exc:
+            raise ValidationError(f"Invalid date format for temporal filter: {exc}") from exc
+
+        path_query = """
+        MATCH p = (center:Entity {id: $id})-[r]-(neighbor)
+        WHERE neighbor:Entity
+          AND (r.validFrom IS NULL OR r.validFrom <= $end_dt)
+          AND (r.validTo IS NULL OR r.validTo >= $start_dt)
+        RETURN nodes(p) AS path_nodes, relationships(p) AS path_rels
+        """
+        try:
+            with self.driver.session() as session:
+                result = session.run(
+                    path_query, id=entity_id.value, start_dt=start_dt, end_dt=end_dt
+                )
+
+                seen_node_ids: set[str] = {entity_id.value}
+                neighbor_nodes: list[GraphNode] = []
+                seen_edge_keys: set[tuple] = set()
+                edges: list[GraphEdge] = []
+
+                for record in result:
+                    for neo_node in record["path_nodes"]:
+                        node_id = neo_node["id"]
+                        if node_id not in seen_node_ids:
+                            seen_node_ids.add(node_id)
+                            loc = neo_node.get("location")
+                            gp = GeoPoint(latitude=loc.y, longitude=loc.x) if loc else None
+                            neighbor_nodes.append(GraphNode(
+                                entity_id=EntityId(node_id),
+                                kind=EntityKind(neo_node["kind"]),
+                                name=neo_node["name"],
+                                confidence=neo_node["confidence"],
+                                provenances=deserialize_provenances(
+                                    neo_node.get("provenances")
+                                ),
+                                geo_point=gp,
+                                properties=json.loads(neo_node.get("properties_json") or "{}"),
+                            ))
+
+                    for neo_rel in record["path_rels"]:
+                        start_id = neo_rel.start_node["id"]
+                        end_id = neo_rel.end_node["id"]
+                        rel_kind = neo_rel["kind"]
+                        edge_key = (start_id, end_id, rel_kind)
+                        if edge_key not in seen_edge_keys:
+                            seen_edge_keys.add(edge_key)
+                            edges.append(GraphEdge(
+                                source_entity_id=EntityId(start_id),
+                                target_entity_id=EntityId(end_id),
+                                kind=RelationshipKind(rel_kind),
+                                confidence=neo_rel["confidence"],
+                                provenances=deserialize_provenances(
+                                    neo_rel.get("provenances")
+                                ),
+                                valid_from=neo_rel.get("validFrom"),
+                                valid_to=neo_rel.get("validTo"),
+                                properties=json.loads(neo_rel.get("properties_json") or "{}"),
+                            ))
+
+                return Neighborhood(
+                    center=center,
+                    nodes=neighbor_nodes,
+                    edges=edges,
+                )
+        except NotFoundError:
+            raise
+        except Neo4jError as exc:
+            raise ExternalServiceError(
+                f"Failed to get temporal neighborhood for {entity_id.value}: {exc}"
             ) from exc
 
     def get_all_nodes(self) -> list[GraphNode]:
@@ -323,7 +428,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
         MATCH (a:Entity)-[r:RELATES]->(b:Entity)
         RETURN a.id AS source, b.id AS target,
                r.kind AS kind, r.confidence AS confidence,
-               r.provenances AS provenances, r.properties_json AS properties_json
+               r.provenances AS provenances, r.properties_json AS properties_json,
+               r.validFrom AS valid_from, r.validTo AS valid_to
         LIMIT {MAX_ALL_EDGES_LIMIT}
         """
         try:
@@ -336,6 +442,8 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                         kind=RelationshipKind(record["kind"]),
                         confidence=record["confidence"],
                         provenances=deserialize_provenances(record["provenances"]),
+                        valid_from=record.get("valid_from"),
+                        valid_to=record.get("valid_to"),
                         properties=json.loads(record.get("properties_json") or "{}"),
                     )
                     for record in result
@@ -357,6 +465,28 @@ class Neo4jGraphRepositoryAdapter(GraphRepositoryPort):
                 }
         except Neo4jError as exc:
             raise ExternalServiceError(f"Failed to get stats: {exc}") from exc
+
+    def find_nearby(self, entity_id: EntityId, radius_km: float) -> list[GraphNode]:
+        """Find entities within a specified radius of a location entity."""
+        center = self.get_node(entity_id)
+        if not center.geo_point:
+            raise ValidationError(f"Entity {entity_id.value} does not have a geo_point.")
+
+        radius_m = radius_km * 1000
+        query = """
+        MATCH (center:Entity {id: $id}), (other:Entity)
+        WHERE other.id <> $id AND other.location IS NOT NULL
+          AND point.distance(center.location, other.location) <= $radius_m
+        RETURN other AS n
+        """
+        try:
+            with self.driver.session() as session:
+                result = session.run(query, id=entity_id.value, radius_m=radius_m)
+                return [record_to_node(record) for record in result]
+        except Neo4jError as exc:
+            raise ExternalServiceError(
+                f"Failed to find nearby entities for {entity_id.value}: {exc}"
+            ) from exc
 
     def close(self) -> None:
         self.driver.close()

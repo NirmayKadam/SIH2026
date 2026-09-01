@@ -11,6 +11,8 @@ class QueryIntent(str, Enum):
     COMMUNITY_MEMBERS = "community_members"
     ENTITY_SEARCH = "entity_search"
     GRAPH_SUMMARY = "graph_summary"
+    TEMPORAL_FILTER = "temporal_filter"
+    FIND_NEARBY = "find_nearby"
 
 
 @dataclass

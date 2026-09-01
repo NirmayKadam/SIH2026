@@ -5,14 +5,14 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export default function IngestionPanel() {
   const [sourceType, setSourceType] = useState('icij_offshore_leaks');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
   const handleIngest = async (e) => {
     e.preventDefault();
-    if (!selectedFile) {
-      toast.warning('Please select a file first.');
+    if (selectedFiles.length === 0) {
+      toast.warning('Please select at least one file.');
       return;
     }
 
@@ -20,7 +20,9 @@ export default function IngestionPanel() {
     try {
       const formData = new FormData();
       formData.append('source_type', sourceType);
-      formData.append('file', selectedFile);
+      selectedFiles.forEach(file => {
+        formData.append('files', file);
+      });
 
       const res = await fetch(`${BASE_URL}/api/ingestion/upload`, {
         method: 'POST',
@@ -32,8 +34,8 @@ export default function IngestionPanel() {
         throw new Error(`Ingestion failed (${res.status}): ${errorText.slice(0, 100)}`);
       }
       const data = await res.json();
-      toast.success(`Ingestion job started: ${data.job_id}`);
-      setSelectedFile(null);
+      toast.success(`Started ${data.results.length} ingestion jobs.`);
+      setSelectedFiles([]);
       if (e.target) e.target.reset(); // clear file input visually
     } catch (err) {
       toast.error(`Ingestion failed: ${err.message}`);
@@ -62,7 +64,8 @@ export default function IngestionPanel() {
         
         <input 
           type="file" 
-          onChange={e => setSelectedFile(e.target.files[0] || null)} 
+          multiple
+          onChange={e => setSelectedFiles(Array.from(e.target.files))} 
           required 
           disabled={loading}
           style={{ padding: '8px', fontSize: '12px' }}
@@ -70,7 +73,7 @@ export default function IngestionPanel() {
         
         <button 
           type="submit" 
-          disabled={loading || !selectedFile} 
+          disabled={loading || selectedFiles.length === 0} 
           style={{ 
             background: loading ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.2)', 
             color: 'var(--neon-amber)', 
