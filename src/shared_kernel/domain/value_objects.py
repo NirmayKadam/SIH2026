@@ -43,11 +43,33 @@ class EntityId:
             raise ValueError("EntityId cannot be empty")
 
 
+@dataclass(frozen=True)
+class GeoPoint:
+    latitude: float
+    longitude: float
+
+    def __post_init__(self):
+        if not -90 <= self.latitude <= 90:
+            raise ValueError("Latitude must be between -90 and 90")
+        if not -180 <= self.longitude <= 180:
+            raise ValueError("Longitude must be between -180 and 180")
+
+
 class SourceType(str, Enum):
     """Which real dataset a piece of data originated from. No 'SYNTHETIC' value exists on purpose."""
     ICIJ_OFFSHORE_LEAKS = "icij_offshore_leaks"
     ENRON_EMAILS = "enron_emails"
     COURT_JUDGMENT = "court_judgment"
+
+
+@dataclass(frozen=True)
+class EvidenceHash:
+    """A cryptographic hash representing the immutable proof of a source document."""
+    value: str
+
+    def __post_init__(self):
+        if not self.value or not self.value.strip():
+            raise ValueError("EvidenceHash cannot be empty")
 
 
 @dataclass(frozen=True)
@@ -60,6 +82,9 @@ class SourceProvenance:
     source_type: SourceType
     source_document_id: str
     ingested_at: datetime
+    evidence_hash: EvidenceHash | None = None
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
 
 
 @dataclass(frozen=True)

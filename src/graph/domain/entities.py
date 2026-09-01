@@ -1,7 +1,8 @@
 """Graph domain — pure Python."""
 from dataclasses import dataclass, field
+from datetime import datetime
 from shared_kernel.domain.value_objects import (
-    EntityId, EntityKind, RelationshipKind, SourceProvenance,
+    EntityId, EntityKind, RelationshipKind, SourceProvenance, GeoPoint
 )
 
 
@@ -12,6 +13,7 @@ class GraphNode:
     name: str
     confidence: float
     provenances: list[SourceProvenance] = field(default_factory=list)
+    geo_point: GeoPoint | None = None
     properties: dict[str, str] = field(default_factory=dict)
 
 
@@ -22,6 +24,8 @@ class GraphEdge:
     kind: RelationshipKind
     confidence: float
     provenances: list[SourceProvenance] = field(default_factory=list)
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
     properties: dict[str, str] = field(default_factory=dict)
 
 

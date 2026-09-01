@@ -19,6 +19,7 @@ class PersistExtractionResultUseCase:
                     entity_id=e.entity_id, kind=e.kind, name=e.name,
                     confidence=e.confidence.score,
                     provenances=[e.provenance],
+                    geo_point=e.geo_point,
                     properties=e.properties,
                 )
             )
@@ -30,6 +31,8 @@ class PersistExtractionResultUseCase:
                     kind=r.kind,
                     confidence=r.confidence.score,
                     provenances=[r.provenance],
+                    valid_from=r.valid_from,
+                    valid_to=r.valid_to,
                     properties=r.properties,
                 )
             )

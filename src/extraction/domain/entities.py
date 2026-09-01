@@ -1,7 +1,8 @@
 """Extraction domain — pure Python."""
 from dataclasses import dataclass, field
+from datetime import datetime
 from shared_kernel.domain.value_objects import (
-    EntityId, Confidence, SourceProvenance, SourceType, EntityKind, RelationshipKind,
+    EntityId, Confidence, SourceProvenance, SourceType, EntityKind, RelationshipKind, GeoPoint
 )
 
 
@@ -13,6 +14,7 @@ class DocumentInput:
     source_type: SourceType
     raw_text: str
     source_path: str = ""
+    evidence_hash: str | None = None
 
 
 @dataclass
@@ -22,6 +24,7 @@ class ExtractedEntity:
     name: str
     confidence: Confidence
     provenance: SourceProvenance
+    geo_point: GeoPoint | None = None
     properties: dict[str, str] = field(default_factory=dict)
 
 
@@ -32,6 +35,8 @@ class ExtractedRelationship:
     kind: RelationshipKind
     confidence: Confidence
     provenance: SourceProvenance
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
     properties: dict[str, str] = field(default_factory=dict)
 
 

@@ -12,6 +12,8 @@ from ingestion.application.use_cases.ingest_document import IngestDocumentUseCas
 
 from graph.infrastructure.adapters.neo4j_graph_repository import Neo4jGraphRepositoryAdapter
 from graph.application.use_cases.get_entity_neighborhood import GetEntityNeighborhoodUseCase
+from graph.application.use_cases.get_temporal_neighborhood import GetTemporalNeighborhoodUseCase
+from graph.application.use_cases.find_nearby import FindNearbyUseCase
 from graph.application.use_cases.get_entity_detail import GetEntityDetailUseCase
 from graph.application.use_cases.search_entities import SearchEntitiesUseCase
 from graph.application.use_cases.get_graph_stats import GetGraphStatsUseCase
@@ -36,12 +38,16 @@ from query.application.use_cases.answer_natural_language_query import (
 from query.infrastructure.adapters.gemini_intent_classifier import GeminiIntentClassifierAdapter
 from query.infrastructure.adapters.template_query_executor import TemplateQueryExecutorAdapter
 
+from blockchain.infrastructure.adapters.local_file_ledger_adapter import LocalFileLedgerAdapter
+from blockchain.application.use_cases.store_evidence_hash import StoreEvidenceHashUseCase
 
 @dataclass
 class Container:
     ingest_document_use_case: IngestDocumentUseCase
     job_queue: RedisRqJobQueueAdapter
     get_neighborhood_use_case: GetEntityNeighborhoodUseCase
+    get_temporal_neighborhood_use_case: GetTemporalNeighborhoodUseCase
+    find_nearby_use_case: FindNearbyUseCase
     get_entity_detail_use_case: GetEntityDetailUseCase
     search_entities_use_case: SearchEntitiesUseCase
     get_graph_stats_use_case: GetGraphStatsUseCase
@@ -51,6 +57,7 @@ class Container:
     detect_suspicious_patterns_use_case: DetectSuspiciousPatternsUseCase
     extract_entities_use_case: ExtractEntitiesFromDocumentUseCase
     answer_query_use_case: AnswerNaturalLanguageQueryUseCase
+    store_evidence_hash_use_case: StoreEvidenceHashUseCase
 
 
 def build_container() -> Container:
@@ -72,11 +79,16 @@ def build_container() -> Container:
 
     compute_centrality_use_case = ComputeCentralityUseCase(analytics)
     find_shortest_path_use_case = FindShortestPathUseCase(analytics)
+    
+    ledger_adapter = LocalFileLedgerAdapter()
+    store_evidence_hash_use_case = StoreEvidenceHashUseCase(ledger_adapter)
 
     return Container(
         ingest_document_use_case=IngestDocumentUseCase(job_queue),
         job_queue=job_queue,
         get_neighborhood_use_case=GetEntityNeighborhoodUseCase(graph_repo),
+        get_temporal_neighborhood_use_case=GetTemporalNeighborhoodUseCase(graph_repo),
+        find_nearby_use_case=FindNearbyUseCase(graph_repo),
         get_entity_detail_use_case=GetEntityDetailUseCase(graph_repo),
         search_entities_use_case=SearchEntitiesUseCase(graph_repo),
         get_graph_stats_use_case=GetGraphStatsUseCase(graph_repo),
@@ -92,8 +104,11 @@ def build_container() -> Container:
                 shortest_path_use_case=find_shortest_path_use_case,
                 detect_communities_use_case=DetectCommunitiesUseCase(analytics),
                 get_neighborhood_use_case=GetEntityNeighborhoodUseCase(graph_repo),
+                get_temporal_neighborhood_use_case=GetTemporalNeighborhoodUseCase(graph_repo),
+                find_nearby_use_case=FindNearbyUseCase(graph_repo),
                 search_entities_use_case=SearchEntitiesUseCase(graph_repo),
                 get_graph_stats_use_case=GetGraphStatsUseCase(graph_repo),
             ),
         ),
+        store_evidence_hash_use_case=store_evidence_hash_use_case,
     )

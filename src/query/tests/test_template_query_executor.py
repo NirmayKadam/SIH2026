@@ -22,13 +22,15 @@ def mock_node(id_str, name, kind=EntityKind.PERSON):
 
 def build_executor(
     centrality=None, shortest=None, communities=None,
-    neighborhood=None, search=None, stats=None,
+    neighborhood=None, temporal=None, nearby=None, search=None, stats=None,
 ):
     return TemplateQueryExecutorAdapter(
         centrality_use_case=centrality or Mock(),
         shortest_path_use_case=shortest or Mock(),
         detect_communities_use_case=communities or Mock(),
         get_neighborhood_use_case=neighborhood or Mock(),
+        get_temporal_neighborhood_use_case=temporal or Mock(),
+        find_nearby_use_case=nearby or Mock(),
         search_entities_use_case=search or Mock(),
         get_graph_stats_use_case=stats or Mock(),
     )

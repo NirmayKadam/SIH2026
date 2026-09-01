@@ -21,6 +21,7 @@ from ingestion.interface.rest.schemas import (
     IngestDocumentResponseDTO,
     IngestionJobStatusResponseDTO,
     UploadDocumentResponseDTO,
+    UploadResult,
 )
 from shared_kernel.domain.errors import NotFoundError
 from shared_kernel.domain.value_objects import SourceType
@@ -49,32 +50,37 @@ def submit_document(
 @router.post("/upload", response_model=UploadDocumentResponseDTO)
 def upload_document(
     source_type: SourceType = Form(...),
-    file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
     use_case: IngestDocumentUseCase = Depends(get_use_case),
 ) -> UploadDocumentResponseDTO:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Filename missing")
-    
-    ext = Path(file.filename).suffix.lower()
-    if ext not in {".csv", ".mbox", ".pdf", ".txt", ".eml"}:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+    results = []
     
     upload_dir = Path("data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
     
-    safe_filename = f"{uuid.uuid4()}_{file.filename}"
-    file_path = upload_dir / safe_filename
-    
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    for file in files:
+        if not file.filename:
+            continue
+            
+        ext = Path(file.filename).suffix.lower()
+        if ext not in {".csv", ".mbox", ".pdf", ".txt", ".eml"}:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
         
-    job_id = use_case.execute(source_type=source_type, source_path=str(file_path))
-    
-    return UploadDocumentResponseDTO(
-        job_id=job_id,
-        filename=file.filename,
-        status="queued"
-    )
+        safe_filename = f"{uuid.uuid4()}_{file.filename}"
+        file_path = upload_dir / safe_filename
+        
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        job_id = use_case.execute(source_type=source_type, source_path=str(file_path))
+        
+        results.append(UploadResult(
+            job_id=job_id,
+            filename=file.filename,
+            status="queued"
+        ))
+        
+    return UploadDocumentResponseDTO(results=results)
 
 
 
