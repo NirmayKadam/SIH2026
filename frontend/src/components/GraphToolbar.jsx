@@ -8,7 +8,9 @@ export default function GraphToolbar({
   onExportPng, 
   onFit, 
   physicsEnabled, 
-  togglePhysics 
+  togglePhysics,
+  simplifyGraph,
+  toggleSimplify
 }) {
   const isKindVisible = (kind) => visibleKinds === null || visibleKinds.includes(kind);
 
@@ -33,6 +35,9 @@ export default function GraphToolbar({
         </button>
         <button onClick={togglePhysics} title={physicsEnabled ? "Disable Physics (Freeze)" : "Enable Physics"} style={{ width: '36px', height: '36px', padding: 0 }}>
           {physicsEnabled ? '🛑' : '▶️'}
+        </button>
+        <button onClick={toggleSimplify} title={simplifyGraph ? "Show Full Graph" : "Simplify Graph (Hide Leaves)"} style={{ width: '36px', height: '36px', padding: 0, border: simplifyGraph ? '2px solid var(--neon-cyan)' : 'none' }}>
+          ✨
         </button>
         <button onClick={onExportPng} title="Export as PNG" style={{ width: '36px', height: '36px', padding: 0 }}>
           📸
