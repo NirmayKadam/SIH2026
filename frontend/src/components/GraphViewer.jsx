@@ -25,7 +25,7 @@ const COMMUNITY_PALETTE = [
 
 export { KIND_COLORS };
 
-const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selectedEntityId, visibleKinds, physicsEnabled = true, communityMap = new Map() }, ref) {
+const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selectedEntityId, visibleKinds, physicsEnabled = true, communityMap = new Map(), simplifyGraph = false }, ref) {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
@@ -120,8 +120,31 @@ const GraphViewer = forwardRef(function GraphViewer({ data, onNodeClick, selecte
       nodeIds.has(e.source) && nodeIds.has(e.target)
     );
 
-    return { nodes: filteredNodes, edges: filteredEdges };
-  }, [processedData, visibleKinds]);
+    let finalNodes = filteredNodes;
+    let finalEdges = filteredEdges;
+
+    if (simplifyGraph) {
+      // Calculate degree of each node
+      const degrees = new Map();
+      finalNodes.forEach(n => degrees.set(n.id, 0));
+      finalEdges.forEach(e => {
+        degrees.set(e.source, (degrees.get(e.source) || 0) + 1);
+        degrees.set(e.target, (degrees.get(e.target) || 0) + 1);
+      });
+
+      // Keep nodes with degree > 1 OR if they are the selected node
+      const keptNodeIds = new Set();
+      finalNodes.forEach(n => {
+         if (n.id === selectedEntityId || (degrees.get(n.id) || 0) > 1) {
+            keptNodeIds.add(n.id);
+         }
+      });
+      finalNodes = finalNodes.filter(n => keptNodeIds.has(n.id));
+      finalEdges = finalEdges.filter(e => keptNodeIds.has(e.source) && keptNodeIds.has(e.target));
+    }
+
+    return { nodes: finalNodes, edges: finalEdges };
+  }, [processedData, visibleKinds, simplifyGraph, selectedEntityId]);
 
   useEffect(() => {
     if (!containerRef.current) return;

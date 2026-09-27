@@ -20,6 +20,7 @@ export default function GraphExplorerPage() {
   const [visibleKinds, setVisibleKinds] = useState(null);
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
   const [communityMap, setCommunityMap] = useState(new Map());
+  const [simplifyGraph, setSimplifyGraph] = useState(false);
   const graphRef = useRef(null);
   const toast = useToast();
 
@@ -169,6 +170,7 @@ export default function GraphExplorerPage() {
             visibleKinds={visibleKinds}
             physicsEnabled={physicsEnabled}
             communityMap={communityMap}
+            simplifyGraph={simplifyGraph}
           />
         )}
       </div>
@@ -181,6 +183,8 @@ export default function GraphExplorerPage() {
         onFit={() => graphRef.current?.fitToScreen()}
         physicsEnabled={physicsEnabled}
         togglePhysics={() => setPhysicsEnabled(!physicsEnabled)}
+        simplifyGraph={simplifyGraph}
+        toggleSimplify={() => setSimplifyGraph(!simplifyGraph)}
       />
 
       <div className="glass-panel" style={{
