@@ -13,10 +13,14 @@ class IngestDocumentResponseDTO(BaseModel):
     job_id: str
 
 
-class UploadDocumentResponseDTO(BaseModel):
+class UploadResult(BaseModel):
     job_id: str
     filename: str
     status: str
+
+
+class UploadDocumentResponseDTO(BaseModel):
+    results: list[UploadResult]
 
 
 

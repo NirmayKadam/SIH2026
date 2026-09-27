@@ -18,6 +18,9 @@ class GraphRepositoryPort(ABC):
     def get_neighborhood(self, entity_id: EntityId, depth: int = 1) -> Neighborhood: ...
 
     @abstractmethod
+    def get_temporal_neighborhood(self, entity_id: EntityId, start_date: str, end_date: str) -> Neighborhood: ...
+
+    @abstractmethod
     def get_node(self, entity_id: EntityId) -> GraphNode:
         """Retrieve a single node by EntityId. Raises NotFoundError if not in graph."""
         ...
@@ -41,6 +44,11 @@ class GraphRepositoryPort(ABC):
     @abstractmethod
     def get_stats(self) -> dict:
         """Return {'total_nodes': int, 'total_edges': int}. Used by dashboard + GRAPH_SUMMARY intent."""
+        ...
+
+    @abstractmethod
+    def find_nearby(self, entity_id: EntityId, radius_km: float) -> list[GraphNode]:
+        """Find entities within a specified radius of a location entity."""
         ...
 
     @abstractmethod

@@ -25,7 +25,7 @@ def mock_parser():
         doc.document_id = "test-doc-123"
         doc.source_type = SourceType.COURT_JUDGMENT
         doc.raw_text = "Test raw text"
-        doc.source_path = "test/path.pdf"
+        doc.source_path = "data/samples/court_sample.pdf"
         
         parser_instance.parse.return_value = [doc]
         mock_parsers.__getitem__.return_value = lambda: parser_instance
@@ -56,7 +56,12 @@ def test_process_ingestion_job_success_path(mock_persist_class, mock_get_current
     """
     job = mock_get_current_job.return_value
     
-    process_ingestion_job("job-123", SourceType.COURT_JUDGMENT.value, "test/path.pdf")
+    # Mock the store_evidence_hash_use_case to return a dummy evidence record
+    evidence_mock = MagicMock()
+    evidence_mock.evidence_hash = "dummyhash"
+    mock_container.store_evidence_hash_use_case.execute.return_value = evidence_mock
+
+    process_ingestion_job("job-123", SourceType.COURT_JUDGMENT.value, "data/samples/court_sample.pdf")
     
     # Check all statuses were set correctly in order
     assert job.meta['status'] == "parsed"
@@ -73,11 +78,16 @@ def test_process_ingestion_job_failure_path(mock_get_current_job, mock_parser, m
     """
     job = mock_get_current_job.return_value
     
+    # Mock the store_evidence_hash_use_case
+    evidence_mock = MagicMock()
+    evidence_mock.evidence_hash = "dummyhash"
+    mock_container.store_evidence_hash_use_case.execute.return_value = evidence_mock
+
     # Make extraction fail
     mock_container.extract_entities_use_case.execute.side_effect = ValueError("Extraction failed")
     
     with pytest.raises(ValueError, match="Extraction failed"):
-        process_ingestion_job("job-123", SourceType.COURT_JUDGMENT.value, "test/path.pdf")
+        process_ingestion_job("job-123", SourceType.COURT_JUDGMENT.value, "data/samples/court_sample.pdf")
     
     # Check job failure metadata
     assert job.meta['status'] == "failed"

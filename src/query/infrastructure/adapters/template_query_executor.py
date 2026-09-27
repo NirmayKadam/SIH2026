@@ -10,6 +10,8 @@ from analytics.application.use_cases.compute_centrality import ComputeCentrality
 from analytics.application.use_cases.find_shortest_path import FindShortestPathUseCase
 from analytics.application.use_cases.detect_communities import DetectCommunitiesUseCase
 from graph.application.use_cases.get_entity_neighborhood import GetEntityNeighborhoodUseCase
+from graph.application.use_cases.get_temporal_neighborhood import GetTemporalNeighborhoodUseCase
+from graph.application.use_cases.find_nearby import FindNearbyUseCase
 from graph.application.use_cases.search_entities import SearchEntitiesUseCase
 from graph.application.use_cases.get_graph_stats import GetGraphStatsUseCase
 from analytics.domain.entities import CentralityType
@@ -25,6 +27,8 @@ REQUIRED_PARAMS = {
     QueryIntent.COMMUNITY_MEMBERS: ["entity_name"],
     QueryIntent.ENTITY_SEARCH: ["name_query"],
     QueryIntent.GRAPH_SUMMARY: [],
+    QueryIntent.TEMPORAL_FILTER: ["entity_name", "start_date", "end_date"],
+    QueryIntent.FIND_NEARBY: ["entity_name", "radius_km"],
 }
 
 
@@ -35,6 +39,8 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
         shortest_path_use_case: FindShortestPathUseCase,
         detect_communities_use_case: DetectCommunitiesUseCase,
         get_neighborhood_use_case: GetEntityNeighborhoodUseCase,
+        get_temporal_neighborhood_use_case: GetTemporalNeighborhoodUseCase,
+        find_nearby_use_case: FindNearbyUseCase,
         search_entities_use_case: SearchEntitiesUseCase,
         get_graph_stats_use_case: GetGraphStatsUseCase,
     ) -> None:
@@ -42,6 +48,8 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
         self.shortest_path_use_case = shortest_path_use_case
         self.detect_communities_use_case = detect_communities_use_case
         self.get_neighborhood_use_case = get_neighborhood_use_case
+        self.get_temporal_neighborhood_use_case = get_temporal_neighborhood_use_case
+        self.find_nearby_use_case = find_nearby_use_case
         self.search_entities_use_case = search_entities_use_case
         self.get_graph_stats_use_case = get_graph_stats_use_case
 
@@ -109,6 +117,34 @@ class TemplateQueryExecutorAdapter(QueryExecutorPort):
                     "edges": [{"source": e.source_entity_id.value, "target": e.target_entity_id.value, "kind": e.kind.value} for e in neighborhood.edges]
                 },
                 explanation=f"Found {len(neighborhood.nodes)} neighbors within {hops} hops.",
+            )
+
+        if query.intent == QueryIntent.TEMPORAL_FILTER:
+            entity_id = self.resolve_entity_id(query.parameters["entity_name"])
+            start_date = query.parameters["start_date"]
+            end_date = query.parameters["end_date"]
+            neighborhood = self.get_temporal_neighborhood_use_case.execute(entity_id, start_date, end_date)
+            return QueryAnswer(
+                intent=query.intent,
+                result={
+                    "center": neighborhood.center.name,
+                    "nodes": [{"id": n.entity_id.value, "name": n.name} for n in neighborhood.nodes],
+                    "edges": [{"source": e.source_entity_id.value, "target": e.target_entity_id.value, "kind": e.kind.value} for e in neighborhood.edges]
+                },
+                explanation=f"Found {len(neighborhood.edges)} temporal events for {neighborhood.center.name} between {start_date} and {end_date}.",
+            )
+
+        if query.intent == QueryIntent.FIND_NEARBY:
+            entity_id = self.resolve_entity_id(query.parameters["entity_name"])
+            radius_km = float(query.parameters.get("radius_km", 5.0))
+            nodes = self.find_nearby_use_case.execute(entity_id, radius_km)
+            return QueryAnswer(
+                intent=query.intent,
+                result={
+                    "center_id": entity_id.value,
+                    "nodes": [{"id": n.entity_id.value, "name": n.name} for n in nodes],
+                },
+                explanation=f"Found {len(nodes)} entities within {radius_km}km of {query.parameters['entity_name']}.",
             )
 
         if query.intent == QueryIntent.COMMUNITY_MEMBERS:

@@ -26,13 +26,14 @@ Intents:
 - community_members: params {{"entity_name": str}}
 - entity_search: params {{"name_query": str}}
 - graph_summary: params {{}}
+- temporal_filter: params {{"entity_name": str, "start_date": str (ISO), "end_date": str (ISO)}}
+- find_nearby: params {{"entity_name": str, "radius_km": float}}
 
 Response schema: {{"intent": str, "parameters": {{...}}, "confidence": float}}
 confidence is your genuine classification confidence, not a placeholder.
 
 Question: "{question}"
 """
-
 
 class GeminiIntentClassifierAdapter(IntentClassifierPort):
     def __init__(self) -> None:

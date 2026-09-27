@@ -19,6 +19,10 @@ class ValidationError(DomainError):
     """Raised when input violates a domain invariant."""
 
 
+class DuplicateEvidenceError(ValidationError):
+    """Raised when a raw file with the same hash has already been ingested into the system."""
+
+
 class ExternalServiceError(DomainError):
     """
     Raised when an infrastructure adapter (LLM API, Neo4j, Redis, file parser) fails.

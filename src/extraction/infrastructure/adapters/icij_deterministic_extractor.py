@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from extraction.application.ports.extraction_port import EntityExtractionPort
 from extraction.domain.entities import DocumentInput, ExtractedEntity, ExtractedRelationship
 from shared_kernel.domain.value_objects import (
-    EntityId, EntityKind, RelationshipKind, Confidence, SourceProvenance,
+    EntityId, EntityKind, RelationshipKind, Confidence, SourceProvenance, EvidenceHash
 )
 from shared_kernel.domain.errors import ExternalServiceError
 
@@ -84,6 +84,7 @@ class IcijDeterministicExtractorAdapter(EntityExtractionPort):
             source_type=document.source_type,
             source_document_id=document.document_id,
             ingested_at=datetime.now(timezone.utc),
+            evidence_hash=EvidenceHash(document.evidence_hash) if document.evidence_hash else None,
         )
 
         # Extract all unused keys as properties (metadata)

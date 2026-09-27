@@ -23,7 +23,7 @@ from extraction.domain.entities import (
     DocumentInput, ExtractedEntity, ExtractedRelationship,
 )
 from shared_kernel.domain.value_objects import (
-    EntityId, Confidence, SourceProvenance, EntityKind, RelationshipKind,
+    EntityId, Confidence, SourceProvenance, EntityKind, RelationshipKind, EvidenceHash
 )
 from shared_kernel.domain.errors import ExternalServiceError, RateLimitExceededError
 
@@ -116,6 +116,7 @@ class GeminiEntityExtractionAdapter(EntityExtractionPort):
             source_type=document.source_type,
             source_document_id=document.document_id,
             ingested_at=datetime.now(timezone.utc),
+            evidence_hash=EvidenceHash(document.evidence_hash) if document.evidence_hash else None,
         )
 
         name_to_id: dict[str, EntityId] = {}
